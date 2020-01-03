@@ -32,9 +32,14 @@ add_library(${PROJECT_NAME} SHARED
 	   )
 
 target_link_libraries(${PROJECT_NAME} ${Open3D_LIBRARIES})
-add_executable(makeSegment src/tests/test_make_fragments.cpp)
 
+add_executable(makeSegment src/tests/test_make_fragments.cpp)
 target_link_libraries(makeSegment   ${PROJECT_NAME})
+
+add_executable(registerSegment src/tests/test_register_fragments.cpp)
+target_link_libraries(registerSegment  ${PROJECT_NAME})
+
+
 
 
 

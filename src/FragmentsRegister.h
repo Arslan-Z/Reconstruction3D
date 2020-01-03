@@ -25,14 +25,12 @@ namespace Reconstruction
             {
                 s = s_;
                 t = t_;
-                Tcsw = Eigen::Matrix4d::Identity();
                 Tctcs = Eigen::Matrix4d::Identity();
                 information = Eigen::Matrix6d ::Identity();
             }
             size_t s;
             size_t t;
             bool success;
-            Eigen::Matrix4d Tcsw;
             Eigen::Matrix4d Tctcs;
             Eigen::Matrix6d information;
         };
@@ -50,7 +48,7 @@ namespace Reconstruction
                                                Eigen::Matrix4d& Tctcs, Eigen::Matrix6d& information);
 //        static void mutiScaleICP();
         static bool register_point_cloud_fpfh();
-        static void updatePoseGraph(Parser config, const MatchingResult matching_result, open3d::registration::PoseGraph& poseGraph);
+        static void updatePoseGraph(Parser config, const MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph);
         static void optimizePoseGraph();
     };
 }

@@ -17,7 +17,6 @@ void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
     using namespace open3d;
     registration::PoseGraph poseGraph;
     poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity())); //base node
-//    poseGraph = io::ReadPoseGraph()
 
     std::vector<MatchingResult> matching_results;
     for(size_t s = 0; s < n_fragments; s++)
@@ -31,11 +30,12 @@ void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
     {
         registerPoincloudPair(config, matching_result);
     }
+    Eigen::Matrix4d current_Tcsw = Eigen::Matrix4d::Identity();
     for(auto matching_result : matching_results)
     {
         if(matching_result.success)
         {
-            updatePoseGraph(config,matching_result,poseGraph);
+            updatePoseGraph(config, matching_result, current_Tcsw, poseGraph);
         }
     }
     io::WritePoseGraph("fragments/global.json",poseGraph);
@@ -58,21 +58,31 @@ void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::
 
     preprocessPointCloud(config, source_pcd, source_pcd_down, source_fpfh);
     preprocessPointCloud(config, target_pcd, target_pcd_down, target_fpfh);
-//    computeInitialRegistration();
+    Eigen::Matrix4d Tctcs;
+    Eigen::Matrix6d information;
+    bool success = computeInitialRegistration(config,s,t,
+            source_pcd_down,target_pcd_down,
+            source_fpfh,target_fpfh,
+            Tctcs,information);
+
+    matching_result.success = success;
+    matching_result.Tctcs = Tctcs;
+    matching_result.information = information;
 
 }
 
-void FragmentsRegister::updatePoseGraph(Parser config, const FragmentsRegister::MatchingResult matching_result, open3d::registration::PoseGraph& poseGraph)
+void FragmentsRegister::updatePoseGraph(Parser config, const FragmentsRegister::MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph)
 {
     using namespace open3d;
     auto s = matching_result.s;
     auto t = matching_result.t;
-    auto Tctcs = matching_result.Tctcs;
-    auto Tctw = matching_result.Tctcs*matching_result.Tcsw;
     auto information = matching_result.information;
+    auto Tctcs = matching_result.Tctcs;
+    auto Tctw = matching_result.Tctcs * Tcsw;
     //odometry
     if(t == s + 1 )
     {
+        Tcsw = Tctw; //update
         registration::PoseGraphNode node(Tctw.inverse());
         registration::PoseGraphEdge edge(s,t,Tctcs,information,false);
         poseGraph.nodes_.push_back(node);
@@ -128,13 +138,14 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
                                                                         target_pcd_down,
                                                                         voxel_size*1.4,
                                                                         Tctcs);
+        return true;
     }
     else
     {
         auto distance_threshold = voxel_size * 1.4;
         auto checker1 = registration::CorrespondenceCheckerBasedOnEdgeLength(0.9);
         auto checker2 = registration::CorrespondenceCheckerBasedOnDistance(distance_threshold);
-        registration::RegistrationRANSACBasedOnFeatureMatching(source_pcd_down,
+        auto result = registration::RegistrationRANSACBasedOnFeatureMatching(source_pcd_down,
                 target_pcd_down,
                 source_fpfh,
                 target_fpfh,
@@ -143,5 +154,22 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
                 4,
                 {checker1,checker2},
                 registration::RANSACConvergenceCriteria(4000000,500));
+        if(result.transformation_.trace() == 4.0)
+        {
+            Tctcs = Eigen::Matrix4d::Identity();
+            information = Eigen::Matrix6d::Identity();
+            return false;
+        }
+        information = registration::GetInformationMatrixFromPointClouds(source_pcd_down,
+                                                                        target_pcd_down,
+                                                                        distance_threshold,
+                                                                        result.transformation_);
+        if(information(5,5)/std::min(source_pcd_down.points_.size(),target_pcd_down.points_.size())<0.3)
+        {
+            Tctcs = Eigen::Matrix4d::Identity();
+            information = Eigen::Matrix6d::Identity();
+            return false;
+        }
+        Tctcs = result.transformation_;
     }
 }
