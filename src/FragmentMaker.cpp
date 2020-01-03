@@ -108,6 +108,7 @@ void FragmentMaker::makePointCloud(size_t fragment_id,FrameVector frameVector, P
     {
         if(i % frame_id_base == 0)
         {
+            std::cout<<"fragment:"<<fragment_id<<" integrating "<<i<<"frame\n";
             geometry::Image depth;
             geometry::Image infraRed;
             auto frame = frameVector[i];

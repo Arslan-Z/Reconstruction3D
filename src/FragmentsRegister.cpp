@@ -15,6 +15,11 @@ void FragmentsRegister::registerFragments(std::string config_file, size_t n_frag
 void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
 {
     using namespace open3d;
+    bool debug = true;
+    if(debug)
+    {
+        utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+    }
     registration::PoseGraph poseGraph;
     poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity())); //base node
 
@@ -53,8 +58,24 @@ void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::
     registration::Feature source_fpfh;
     registration::Feature target_fpfh;
 
-    io::ReadPointCloud(Parser::plyFileName(s),source_pcd);
-    io::ReadPointCloud(Parser::plyFileName(t),target_pcd);
+    bool read = false;
+    read = io::ReadPointCloud(Parser::plyFileName(s),source_pcd);
+    if(!read)
+    {
+        std::cout<<"fragment pcd not found. Skip\n";
+        return;
+    }
+    read = io::ReadPointCloud(Parser::plyFileName(t),target_pcd);
+    if(!read)
+    {
+        std::cout<<"fragment pcd not found. Skip\n";
+        return;
+    }
+    if(source_pcd.points_.size() == 0 || target_pcd.points_.size() == 0)
+    {
+        std::cout<<"fragment invalid. Skip\n";
+        return;
+    }
 
     preprocessPointCloud(config, source_pcd, source_pcd_down, source_fpfh);
     preprocessPointCloud(config, target_pcd, target_pcd_down, target_fpfh);
