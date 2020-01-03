@@ -5,9 +5,11 @@
 #ifndef RECONSTRUCTION3D_FRAGMENTSREGISTER_H
 #define RECONSTRUCTION3D_FRAGMENTSREGISTER_H
 
+#include <list>
 #include "util/Parser.h"
 #include "Open3D/Open3D.h"
 #include "Open3D/Registration/GlobalOptimization.h"
+#include "Open3D/Registration/ColoredICP.h"
 
 namespace Reconstruction
 {
@@ -36,13 +38,20 @@ namespace Reconstruction
         };
 
         static void makePoseGraphForScene(Parser config, size_t n_fragments);
-        static void optimizePoseGraph();
         static void registerPoincloudPair(Parser config, MatchingResult& matching_result);
-        static void preprocessPointCloud();
-        static void computeInitialRegistration();
+        static void preprocessPointCloud(Parser config, const open3d::geometry::PointCloud pcd,
+                                         open3d::geometry::PointCloud& pcd_down,
+                                         open3d::registration::Feature& pcd_fpfh);
+        static bool computeInitialRegistration(const Parser config, const size_t s, const size_t t,
+                                               const open3d::geometry::PointCloud source_pcd_down,
+                                               const open3d::geometry::PointCloud target_pcd_down,
+                                               const open3d::registration::Feature source_fpfh,
+                                               const open3d::registration::Feature target_fpfh,
+                                               Eigen::Matrix4d& Tctcs, Eigen::Matrix6d& information);
 //        static void mutiScaleICP();
         static bool register_point_cloud_fpfh();
         static void updatePoseGraph(Parser config, const MatchingResult matching_result, open3d::registration::PoseGraph& poseGraph);
+        static void optimizePoseGraph();
     };
 }
 

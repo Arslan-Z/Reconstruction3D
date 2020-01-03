@@ -48,10 +48,17 @@ void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::
     auto t = matching_result.t;
     geometry::PointCloud source_pcd;
     geometry::PointCloud target_pcd;
-    io::ReadPointCloud(Parser::plyFileName(s),source_pcd);
-    io::ReadPointCloud(Parser::plyFileName(s),target_pcd);
+    geometry::PointCloud source_pcd_down;
+    geometry::PointCloud target_pcd_down;
+    registration::Feature source_fpfh;
+    registration::Feature target_fpfh;
 
-//    preprocessPointCloud();
+    io::ReadPointCloud(Parser::plyFileName(s),source_pcd);
+    io::ReadPointCloud(Parser::plyFileName(t),target_pcd);
+
+    preprocessPointCloud(config, source_pcd, source_pcd_down, source_fpfh);
+    preprocessPointCloud(config, target_pcd, target_pcd_down, target_fpfh);
+//    computeInitialRegistration();
 
 }
 
@@ -78,4 +85,63 @@ void FragmentsRegister::updatePoseGraph(Parser config, const FragmentsRegister::
         poseGraph.edges_.push_back(edge);
     }
 
+}
+
+void FragmentsRegister::preprocessPointCloud(Parser config, const open3d::geometry::PointCloud pcd,
+                                             open3d::geometry::PointCloud& pcd_down,
+                                             open3d::registration::Feature& pcd_fpfh)
+{
+    using namespace open3d;
+    auto voxel_size = config.getValue<double>("voxel_size");
+    pcd_down = *pcd.VoxelDownSample(voxel_size);
+    pcd_down.EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
+
+    pcd_fpfh = *registration::ComputeFPFHFeature(pcd_down,geometry::KDTreeSearchParamHybrid(voxel_size*5.0,100));
+
+}
+
+bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size_t t,
+                                                   open3d::geometry::PointCloud source_pcd_down,
+                                                   open3d::geometry::PointCloud target_pcd_down,
+                                                   open3d::registration::Feature source_fpfh,
+                                                   open3d::registration::Feature target_fpfh,
+                                                   Eigen::Matrix4d& Tctcs, Eigen::Matrix6d& information)
+{
+    using namespace open3d;
+    registration::PoseGraph poseGraph_fragment;
+    auto voxel_size = config.getValue<double>("vexel_size");
+    //odometry
+    if(t == s + 1)
+    {
+        io::ReadPoseGraph(Parser::plyFileName(s),poseGraph_fragment);
+        auto Twcs0 = poseGraph_fragment.nodes_.front().pose_;
+        auto Twcsn = poseGraph_fragment.nodes_.back().pose_;
+        auto Tcsncs0 = Twcsn.inverse()*Twcs0;
+
+        Tctcs = Tcsncs0; //initial value
+
+        auto result = registration::RegistrationColoredICP(source_pcd_down,target_pcd_down,voxel_size,Tctcs,
+                registration::ICPConvergenceCriteria(1e-6,1e-6,50));
+
+        Tctcs = result.transformation_;
+        information = registration::GetInformationMatrixFromPointClouds(source_pcd_down,
+                                                                        target_pcd_down,
+                                                                        voxel_size*1.4,
+                                                                        Tctcs);
+    }
+    else
+    {
+        auto distance_threshold = voxel_size * 1.4;
+        auto checker1 = registration::CorrespondenceCheckerBasedOnEdgeLength(0.9);
+        auto checker2 = registration::CorrespondenceCheckerBasedOnDistance(distance_threshold);
+        registration::RegistrationRANSACBasedOnFeatureMatching(source_pcd_down,
+                target_pcd_down,
+                source_fpfh,
+                target_fpfh,
+                distance_threshold,
+                registration::TransformationEstimationPointToPoint(false),
+                4,
+                {checker1,checker2},
+                registration::RANSACConvergenceCriteria(4000000,500));
+    }
 }
