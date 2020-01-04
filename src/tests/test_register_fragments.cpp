@@ -19,6 +19,20 @@ int main(int argc,char** argv)
 
 //    Reconstruction::FragmentsRegister::registerFragments(config_file,n_fragments);
     Reconstruction::Integrater::integrate(config,"fragments/global_optimized.json",n_fragments,frameVec);
-
+//        Reconstruction::FragmentsRegister::optimizePoseGraph(config,Parser::globalPoseGraphName());
+//    Reconstruction::Integrater integrater;
+//    integrater.init(config_file);
+//    int i = 0;
+//    for(auto frame : frameVec)
+//    {
+//        if(i%3 != 0)
+//        {
+//            i++;
+//            continue;
+//        }
+//        i++;
+//        integrater.integrateFrame(frame);
+//    }
+//    integrater.generateMesh();
 
 }

@@ -19,6 +19,7 @@ namespace Reconstruction
     {
     public:
         static void registerFragments(std::string config_file, size_t n_fragments);
+        static void optimizePoseGraph(Parser config, std::string poseGraphName);
 
     private:
         struct MatchingResult
@@ -52,7 +53,6 @@ namespace Reconstruction
 //        static void mutiScaleICP();
         static bool register_point_cloud_fpfh();
         static void updatePoseGraph(Parser config, const MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph);
-        static void optimizePoseGraph(Parser config, std::string poseGraphName);
         static void draw_registration_result(const open3d::geometry::PointCloud source, const open3d::geometry::PointCloud target,
                                              const Eigen::Matrix4d trans);
     };

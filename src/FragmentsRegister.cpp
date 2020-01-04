@@ -108,7 +108,7 @@ void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::
     matching_result.information = information;
 //    if(success)
 //    {
-//        draw_registration_result(source_pcd,target_pcd,Tctcs);
+//    draw_registration_result(source_pcd_down,target_pcd_down,Tctcs);
 //    }
 }
 
@@ -119,10 +119,10 @@ void FragmentsRegister::updatePoseGraph(Parser config, const FragmentsRegister::
     auto t = matching_result.t;
     auto information = matching_result.information;
     auto Tctcs = matching_result.Tctcs;
-    auto Tctw = matching_result.Tctcs * Tcsw;
     //odometry
     if(t == s + 1 )
     {
+        auto Tctw = matching_result.Tctcs * Tcsw;
         Tcsw = Tctw; //update
         registration::PoseGraphNode node(Tctw.inverse());
         registration::PoseGraphEdge edge(s,t,Tctcs,information,false);
@@ -144,7 +144,7 @@ void FragmentsRegister::preprocessPointCloud(Parser config, const open3d::geomet
 {
     using namespace open3d;
     auto voxel_size = config.getValue<double>("voxel_size");
-    pcd_down = *pcd.VoxelDownSample(voxel_size);
+    pcd_down = *pcd.VoxelDownSample(2*voxel_size);
     pcd_down.EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
 
     pcd_fpfh = *registration::ComputeFPFHFeature(pcd_down,geometry::KDTreeSearchParamHybrid(voxel_size*5.0,100));
@@ -183,23 +183,41 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
     }
     else
     {
-        auto distance_threshold = voxel_size * 1.4;
-        auto checker1 = registration::CorrespondenceCheckerBasedOnEdgeLength(0.9);
-        auto checker2 = registration::CorrespondenceCheckerBasedOnDistance(distance_threshold);
-        auto result = registration::RegistrationRANSACBasedOnFeatureMatching(source_pcd_down,
-                target_pcd_down,
-                source_fpfh,
-                target_fpfh,
-                distance_threshold,
-                registration::TransformationEstimationPointToPoint(false),
-                4,
-                {checker1,checker2},
-                registration::RANSACConvergenceCriteria(4000000,500));
-//        auto result = registration::FastGlobalRegistration(source_pcd_down,
-//                target_pcd_down,
-//                source_fpfh,
-//                target_fpfh,
-//                registration::FastGlobalRegistrationOption());
+        auto method = config.getValue<std::string>("global_registration");
+        registration::RegistrationResult result;
+        if(method == "ransac")
+        {
+//            registration::PoseGraph global_poseGraph;
+//            io::ReadPoseGraph(Parser::globalPoseGraphName(),global_poseGraph);
+//            auto Twcs = global_poseGraph.nodes_[s].pose_;
+//            auto Twct = global_poseGraph.nodes_[t].pose_;
+//            Tctcs = Twct.inverse()*Twcs; //initial value
+
+//            auto result = registration::RegistrationColoredICP(source_pcd_down,target_pcd_down,voxel_size,Tctcs,
+//                                                               registration::ICPConvergenceCriteria(1e-6,1e-6,50));
+            auto distance_threshold = voxel_size * 1.4;
+            auto checker1 = registration::CorrespondenceCheckerBasedOnEdgeLength(0.9);
+            auto checker2 = registration::CorrespondenceCheckerBasedOnDistance(distance_threshold);
+
+            result = registration::RegistrationRANSACBasedOnFeatureMatching(source_pcd_down,
+                    target_pcd_down,
+                    source_fpfh,
+                    target_fpfh,
+                    distance_threshold,
+                    registration::TransformationEstimationPointToPoint(false),
+                    4,
+                    {checker1,checker2},
+                    registration::RANSACConvergenceCriteria(40000000,500));
+        }
+        else
+        {
+            result = registration::FastGlobalRegistration(source_pcd_down,
+                                                               target_pcd_down,
+                                                               source_fpfh,
+                                                               target_fpfh,
+                                                               registration::FastGlobalRegistrationOption());
+        }
+
         if(result.transformation_.trace() == 4.0)
         {
             Tctcs = Eigen::Matrix4d::Identity();
@@ -208,7 +226,7 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
         }
         information = registration::GetInformationMatrixFromPointClouds(source_pcd_down,
                                                                         target_pcd_down,
-                                                                        distance_threshold,
+                                                                        voxel_size*1.4,
                                                                         result.transformation_);
         if(information(5,5)/std::min(source_pcd_down.points_.size(),target_pcd_down.points_.size())<0.3)
         {
@@ -217,6 +235,7 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
             return false;
         }
         Tctcs = result.transformation_;
+
     }
 }
 
@@ -233,6 +252,8 @@ void FragmentsRegister::draw_registration_result(const open3d::geometry::PointCl
     source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0.706, 0));
     target_pcd->PaintUniformColor(Eigen::Vector3d(0, 0.651, 0.929));
     source_pcd->Transform(trans);
+    source_pcd->EstimateNormals();
+    target_pcd->EstimateNormals();
     open3d::visualization::DrawGeometries({source_pcd,target_pcd});
 }
 
@@ -244,7 +265,10 @@ void FragmentsRegister::optimizePoseGraph(Parser config, std::string poseGraphNa
     io::ReadPoseGraph(poseGraphName,poseGraph);
     auto method = registration::GlobalOptimizationLevenbergMarquardt();
     auto criteria = registration::GlobalOptimizationConvergenceCriteria();
-    auto option = registration::GlobalOptimizationOption(0.07,0.25,0.1,0);
+    auto max_correspondence_distance = config.getValue<double>("voxel_size") * 1.4;
+    auto preference_loop_closure = config.getValue<double>("preference_loop_closure");
+    auto option = registration::GlobalOptimizationOption(max_correspondence_distance,
+            0.25,preference_loop_closure,0);
     registration::GlobalOptimization(poseGraph,method,criteria,option);
     io::WritePoseGraph("fragments/global_optimized.json",poseGraph); //todo
     utility::SetVerbosityLevel(utility::VerbosityLevel::Error);

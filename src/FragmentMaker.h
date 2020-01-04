@@ -24,6 +24,7 @@ namespace Reconstruction
         static void makePoseGraph(size_t fragment_id, FrameVector frameVector, Parser config);
         static void optimizePoseGraph(size_t fragment_id, Parser config);
         static void makePointCloud(size_t fragment_id,FrameVector frameVector, Parser config);
+        static std::shared_ptr<open3d::geometry::PointCloud> createPoinCloudFromFrame(const Frame frame, const Parser config);
 
     };
 }

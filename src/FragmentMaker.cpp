@@ -44,9 +44,14 @@ void FragmentMaker::makePoseGraph(size_t fragment_id, FrameVector frameVector, P
                 auto Tctcs = Tctw * Twcs;
                 auto Tc0ct = Tc0w * frameVector[t].getConstTwc();
 
+                auto source_pcd = createPoinCloudFromFrame(frameVector[s], config);
+                auto target_pcd = createPoinCloudFromFrame(frameVector[t], config);
+                auto voxel_size = config.getValue<double>("voxel_size");
+                auto information = registration::GetInformationMatrixFromPointClouds(*source_pcd,*target_pcd,voxel_size,Tctcs);
+
                 poseGraph.nodes_.push_back(registration::PoseGraphNode(Tc0ct));
 
-                poseGraph.edges_.push_back(registration::PoseGraphEdge(s,t,Tctcs));
+                poseGraph.edges_.push_back(registration::PoseGraphEdge(s,t,Tctcs,information));
             }
             //local loop closure
             else if(s%keyFrame_id_base == 0 &&
@@ -97,7 +102,8 @@ void FragmentMaker::makePointCloud(size_t fragment_id,FrameVector frameVector, P
     double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
     double depth_factor = config.getValue<double>("depth_factor");
     double depth_truncate = config.getValue<double>("depth_truncate");
-    integration::ScalableTSDFVolume volume(voxel_size,0.9*voxel_size,open3d::integration::TSDFVolumeColorType::Gray32);
+
+    integration::ScalableTSDFVolume volume(voxel_size,0.04,open3d::integration::TSDFVolumeColorType::Gray32);
 
 
     int width = config.getValue<int>("Camera.width");
@@ -122,10 +128,10 @@ void FragmentMaker::makePointCloud(size_t fragment_id,FrameVector frameVector, P
             bool read = false;
             read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
             if(!read)
-                return;
+                continue;
             read = io::ReadImageFromPNG(frame.getInfraRedImagePath().c_str(),infraRed);
             if(!read)
-                return;
+                continue;
             auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
                     infraRed, depth, depth_factor,
                     depth_truncate, true);
@@ -135,10 +141,38 @@ void FragmentMaker::makePointCloud(size_t fragment_id,FrameVector frameVector, P
     }
     auto mesh = volume.ExtractTriangleMesh();
     mesh->ComputeVertexNormals();
-//    auto pcd = volume.ExtractPointCloud();
-    std::shared_ptr<geometry::PointCloud> pcd(new geometry::PointCloud);
-    pcd->points_ = mesh->vertices_;
-    pcd->colors_ = mesh->vertex_colors_;
-    visualization::DrawGeometriesWithCustomAnimation({pcd}, "Animation", 1920, 1080);
+    auto pcd = volume.ExtractPointCloud();
+
     io::WritePointCloud(TemplatePoinCloudName(fragment_id),*pcd);
+}
+
+std::shared_ptr<open3d::geometry::PointCloud> FragmentMaker::createPoinCloudFromFrame(Frame frame, Parser config)
+{
+    using namespace open3d;
+    int width = config.getValue<int>("Camera.width");
+    int height = config.getValue<int>("Camera.height");
+    double fx = config.getValue<double>("Camera.fx");
+    double fy = config.getValue<double>("Camera.fy");
+    double cx = config.getValue<double>("Camera.cx");
+    double cy = config.getValue<double>("Camera.cy");
+    camera::PinholeCameraIntrinsic intrinsic;
+    intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
+
+    double depth_factor = config.getValue<double>("depth_factor");
+    double depth_truncate = config.getValue<double>("depth_truncate");
+
+    geometry::Image depth;
+    geometry::Image infraRed;
+    bool read = false;
+    read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
+    if(!read)
+        return NULL;
+    read = io::ReadImageFromPNG(frame.getInfraRedImagePath().c_str(),infraRed);
+    if(!read)
+        return NULL;
+    auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
+            infraRed, depth, depth_factor,
+            depth_truncate, true);
+
+    return geometry::PointCloud::CreateFromRGBDImage(*rgbd,intrinsic);
 }

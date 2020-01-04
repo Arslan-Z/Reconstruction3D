@@ -26,8 +26,8 @@ void Integrater::init(std::string strSettingPath)
 
     mVolume_ptr.reset(
             new open3d::integration::ScalableTSDFVolume
-            (mTSDF_param.tsdf_voxel_size,
-             10*mTSDF_param.tsdf_voxel_size,
+            (mTSDF_param.tsdf_size/mTSDF_param.tsdf_res,
+             4*mTSDF_param.tsdf_size/mTSDF_param.tsdf_res,
              open3d::integration::TSDFVolumeColorType::Gray32)
             );
 
@@ -125,7 +125,7 @@ Integrater::Volume Integrater::createVolume(Parser config)
 
     double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
 
-    Volume volume(new integration::ScalableTSDFVolume(voxel_size,10*voxel_size,open3d::integration::TSDFVolumeColorType::Gray32));
+    Volume volume(new integration::ScalableTSDFVolume(voxel_size,4*voxel_size,open3d::integration::TSDFVolumeColorType::Gray32));
 
     return volume;
 }
@@ -141,14 +141,14 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
     FrameVector local_frameVec;
     local_frameVec.insert(local_frameVec.end(),
             frameVector.begin()+fragment_id*n_frame_per_fragment,
-                          frameVector.begin()+(fragment_id+1)*n_frame_per_fragment);
+                          std::min(frameVector.begin()+(fragment_id+1)*n_frame_per_fragment,frameVector.end()));
 
     registration::PoseGraph fragment_poseGraph;
     io::ReadPoseGraph(Parser::poseGraphName(fragment_id),fragment_poseGraph);
 
     for(size_t node_id = 0; node_id < fragment_poseGraph.nodes_.size(); node_id++)
     {
-        if(node_id%2 != 0) //every two frames todo
+        if(node_id%3 != 0) //every two frames todo
             continue;
 
         auto node = fragment_poseGraph.nodes_[node_id];
