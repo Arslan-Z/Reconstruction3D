@@ -86,6 +86,53 @@ Reconstruction::FrameVector Reader::readITEFrames(const char *cam_file,const cha
     return frameVec;
 }
 
+Reconstruction::FrameVector Reader::readITEFormat(const char *cam_file, const char *img_path_file)
+{
+    FILE* pf_camera_file = fopen(cam_file,"r");
+    FILE* pf_image_paths_file = fopen(img_path_file,"r");
+    FrameVector frameVector;
+    size_t id = 0;
+    if(pf_camera_file != NULL && pf_image_paths_file != NULL)
+    {
+        while(!feof(pf_camera_file))
+        {
+            Frame frame;
+            frame.mGlobalIndex = id;
+            id++;
+            double ax,ay,az,x,y,z;
+            char rgb[256],ir[256],depth[256];
+            int scan = 0;
+            scan = fscanf(pf_camera_file,"%lf %lf %lf %lf %lf %lf",&ax,&ay,&az,&x,&y,&z);
+            if(scan!=6)
+                break;
+            scan = fscanf(pf_image_paths_file,"%s %s %s",rgb,ir,depth);
+            if(scan!=3)
+                ;//todo
+            //read in Twc -> Tcw
+            Eigen::Matrix3d R;
+            Eigen::Vector3d trans;
+            auto angle = ax*ax + ay*ay + az*az;
+            angle = sqrt(angle);
+            R = Eigen::AngleAxisd(angle,Eigen::Vector3d(ax,ay,az)).inverse().toRotationMatrix();
+            trans = R*Eigen::Vector3d(x,y,z);
+            trans *= -1;
+            frame.setAngleAxisAndPoint(Eigen::AngleAxisd(angle,Eigen::Vector3d(ax,ay,az)).inverse(),trans);
+            frame.setImagePaths(rgb,depth,ir);
+
+            frameVector.push_back(frame);
+        }
+
+        fclose(pf_camera_file);
+        fclose(pf_image_paths_file);
+    }
+    else
+    {
+
+    }
+
+    return frameVector;
+}
+
 
 
 

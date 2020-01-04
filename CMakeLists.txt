@@ -23,6 +23,7 @@ add_definitions(-O3)
 
 add_library(${PROJECT_NAME} SHARED
         src/io/Reader.cpp
+        src/io/Writer.cpp
         src/util/Converter.cpp
         src/util/Parser.cpp
         src/Frame.cpp

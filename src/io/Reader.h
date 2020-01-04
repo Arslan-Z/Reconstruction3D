@@ -13,7 +13,8 @@ namespace Reconstruction
         class Reader
         {
         public:
-            static Reconstruction::FrameVector readITEFrames(const char *cam_file,const char *dataset_path);
+            static FrameVector readITEFrames(const char *cam_file,const char *dataset_path);
+            static FrameVector readITEFormat(const char* cam_file, const char* img_path_file);
         };
     }
 
