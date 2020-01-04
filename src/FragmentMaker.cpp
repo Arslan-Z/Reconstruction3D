@@ -11,7 +11,7 @@ void FragmentMaker::processSingleFragment(size_t fragment_id, FrameVector frameV
     Parser config;
     config.load(config_file);
     makePoseGraph(fragment_id, frameVector, config);
-//    optimizePoseGraph(fragment_id,config);
+    optimizePoseGraph(fragment_id,config);
     makePointCloud(fragment_id,frameVector,config);
 }
 
@@ -28,7 +28,6 @@ void FragmentMaker::makePoseGraph(size_t fragment_id, FrameVector frameVector, P
     if(keyFrame_id_base == 0)
         keyFrame_id_base = 1;
 
-//    poseGraph.nodes_.push_back(registration::PoseGraphNode(frameVector[0].getConstTwc()));
     auto Tc0w = frameVector[0].getConstTcw();
     poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity()));
 
@@ -36,6 +35,11 @@ void FragmentMaker::makePoseGraph(size_t fragment_id, FrameVector frameVector, P
     {
         for(size_t t = s + 1; t < end_id; t++)
         {
+
+//            auto source_pcd = createPoinCloudFromFrame(frameVector[s], config);
+//            auto target_pcd = createPoinCloudFromFrame(frameVector[t], config);
+//            auto voxel_size = config.getValue<double>("voxel_size");
+
             //odometry
             if(t == s + 1)
             {
@@ -44,14 +48,14 @@ void FragmentMaker::makePoseGraph(size_t fragment_id, FrameVector frameVector, P
                 auto Tctcs = Tctw * Twcs;
                 auto Tc0ct = Tc0w * frameVector[t].getConstTwc();
 
-                auto source_pcd = createPoinCloudFromFrame(frameVector[s], config);
-                auto target_pcd = createPoinCloudFromFrame(frameVector[t], config);
-                auto voxel_size = config.getValue<double>("voxel_size");
-                auto information = registration::GetInformationMatrixFromPointClouds(*source_pcd,*target_pcd,voxel_size,Tctcs);
-
+//                auto information = registration::GetInformationMatrixFromPointClouds(*source_pcd->VoxelDownSample(voxel_size),
+//                                                                                     *target_pcd->VoxelDownSample(voxel_size),
+//                                                                                     voxel_size,
+//                                                                                     Tctcs);
+                auto information = Eigen::Matrix6d::Identity();
                 poseGraph.nodes_.push_back(registration::PoseGraphNode(Tc0ct));
 
-                poseGraph.edges_.push_back(registration::PoseGraphEdge(s,t,Tctcs,information));
+                poseGraph.edges_.push_back(registration::PoseGraphEdge(s,t,Tctcs,information,false));
             }
             //local loop closure
             else if(s%keyFrame_id_base == 0 &&
@@ -61,8 +65,14 @@ void FragmentMaker::makePoseGraph(size_t fragment_id, FrameVector frameVector, P
                 auto Tctw = frameVector[t].getConstTcw();
                 auto Twcs = frameVector[s].getConstTwc();
                 auto Tctcs = Tctw * Twcs;
-                registration::PoseGraphEdge edge(s,t,Tctcs);
-                edge.uncertain_= true;
+
+//                auto information = registration::GetInformationMatrixFromPointClouds(*source_pcd->VoxelDownSample(voxel_size),
+//                                                                                     *target_pcd->VoxelDownSample(voxel_size),
+//                                                                                     voxel_size,
+//                                                                                     Tctcs);
+                auto information = Eigen::Matrix6d::Identity();
+                registration::PoseGraphEdge edge(s,t,Tctcs,information,true);
+//                edge.uncertain_= true;
                 poseGraph.edges_.push_back(edge);
             }
         }
@@ -74,12 +84,15 @@ void FragmentMaker::makePoseGraph(size_t fragment_id, FrameVector frameVector, P
 void FragmentMaker::optimizePoseGraph(size_t fragment_id, Parser config)
 {
     using namespace open3d;
+    auto max_correspondence_distance = config.getValue<double>("max_depth_diff");
+    auto preference_loop_closure = config.getValue<double>("preference_loop_closure_local");
     utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
     registration::PoseGraph poseGraph;
     io::ReadPoseGraph(TemplatePoseGraphName(fragment_id),poseGraph);
     auto method = registration::GlobalOptimizationLevenbergMarquardt();
     auto criteria = registration::GlobalOptimizationConvergenceCriteria();
-    auto option = registration::GlobalOptimizationOption(0.07,0.25,0.1,0);
+    auto option = registration::GlobalOptimizationOption(max_correspondence_distance,0.25,preference_loop_closure,0);
+
     registration::GlobalOptimization(poseGraph,method,criteria,option);
     io::WritePoseGraph(TemplatePoseGraphName(fragment_id),poseGraph);
     utility::SetVerbosityLevel(utility::VerbosityLevel::Error);
@@ -143,6 +156,7 @@ void FragmentMaker::makePointCloud(size_t fragment_id,FrameVector frameVector, P
     mesh->ComputeVertexNormals();
     auto pcd = volume.ExtractPointCloud();
 
+    visualization::DrawGeometries({pcd});
     io::WritePointCloud(TemplatePoinCloudName(fragment_id),*pcd);
 }
 

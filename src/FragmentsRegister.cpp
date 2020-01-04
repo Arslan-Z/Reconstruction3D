@@ -245,8 +245,7 @@ void FragmentsRegister::draw_registration_result(const open3d::geometry::PointCl
 {
     std::shared_ptr<open3d::geometry::PointCloud> source_pcd(new open3d::geometry::PointCloud);
     std::shared_ptr<open3d::geometry::PointCloud> target_pcd(new open3d::geometry::PointCloud);
-//    auto source_temp = source_pcd;
-//    auto target_temp = target_pcd;
+
     *source_pcd = source;
     *target_pcd = target;
     source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0.706, 0));
