@@ -10,6 +10,8 @@
 #include "Open3D/Open3D.h"
 #include "Open3D/Registration/GlobalOptimization.h"
 #include "Open3D/Registration/ColoredICP.h"
+#include "Open3D/Registration/FastGlobalRegistration.h"
+//#include "Open3D/Registration/TransformationEstimation.h"
 
 namespace Reconstruction
 {
@@ -25,6 +27,7 @@ namespace Reconstruction
             {
                 s = s_;
                 t = t_;
+                success = false;
                 Tctcs = Eigen::Matrix4d::Identity();
                 information = Eigen::Matrix6d ::Identity();
             }
@@ -49,7 +52,9 @@ namespace Reconstruction
 //        static void mutiScaleICP();
         static bool register_point_cloud_fpfh();
         static void updatePoseGraph(Parser config, const MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph);
-        static void optimizePoseGraph();
+        static void optimizePoseGraph(Parser config, std::string poseGraphName);
+        static void draw_registration_result(const open3d::geometry::PointCloud source, const open3d::geometry::PointCloud target,
+                                             const Eigen::Matrix4d trans);
     };
 }
 

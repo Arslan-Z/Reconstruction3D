@@ -42,20 +42,5 @@ int main(int argc,char** argv)
         Reconstruction::FragmentMaker::processSingleFragment(i,fragment,config_file);
         i++;
     }
-//    Reconstruction::Integrater integrater;
-//    integrater.init("../dataset/ITE_Logo/ITE.yaml");
-//    integrater.id = 0;
-////    make_single_fragment(frameVec);
-//    int i = 0;
-//    for(auto frame : frameVec)
-//    {
-//        printf("%d\n",i);
-//        integrater.integrateFrame(frame);
-//        if(i>100)
-//            break;
-//        else
-//            i++;
-//    }
-//    integrater.generatePointCloud(true);
     return 0;
 }

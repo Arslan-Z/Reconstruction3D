@@ -3,7 +3,7 @@
 //
 
 #include "FragmentsRegister.h"
-
+#include <thread>
 using namespace Reconstruction;
 
 void FragmentsRegister::registerFragments(std::string config_file, size_t n_fragments)
@@ -11,17 +11,17 @@ void FragmentsRegister::registerFragments(std::string config_file, size_t n_frag
     Parser config;
     config.load(config_file);
     makePoseGraphForScene(config, n_fragments);
+    optimizePoseGraph(config,"fragments/global.json");
 }
 void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
 {
     using namespace open3d;
     bool debug = true;
+    bool multi_thread = false;
     if(debug)
     {
         utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
     }
-    registration::PoseGraph poseGraph;
-    poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity())); //base node
 
     std::vector<MatchingResult> matching_results;
     for(size_t s = 0; s < n_fragments; s++)
@@ -31,11 +31,27 @@ void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
             matching_results.push_back(MatchingResult(s,t));
         }
     }
-    for(auto& matching_result : matching_results)
+    if(multi_thread)
     {
-        registerPoincloudPair(config, matching_result);
+        std::vector<std::reference_wrapper<std::thread>> threads;
+        for(auto& matching_result : matching_results)
+        {
+//            std::thread thr(FragmentsRegister::registerPoincloudPair,config,matching_result);
+//            threads.push_back(thr)
+        }
     }
+    else
+    {
+        for(auto& matching_result : matching_results)
+        {
+            std::cout<<"registrating pair: "<<matching_result.s<<"/"<<matching_result.t<<std::endl;
+            registerPoincloudPair(config, matching_result);
+        }
+    }
+    registration::PoseGraph poseGraph;
+    poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity())); //base node
     Eigen::Matrix4d current_Tcsw = Eigen::Matrix4d::Identity();
+
     for(auto matching_result : matching_results)
     {
         if(matching_result.success)
@@ -43,7 +59,7 @@ void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
             updatePoseGraph(config, matching_result, current_Tcsw, poseGraph);
         }
     }
-    io::WritePoseGraph("fragments/global.json",poseGraph);
+    io::WritePoseGraph("fragments/global.json",poseGraph);//todo
 }
 
 void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::MatchingResult& matching_result)
@@ -81,6 +97,7 @@ void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::
     preprocessPointCloud(config, target_pcd, target_pcd_down, target_fpfh);
     Eigen::Matrix4d Tctcs;
     Eigen::Matrix6d information;
+
     bool success = computeInitialRegistration(config,s,t,
             source_pcd_down,target_pcd_down,
             source_fpfh,target_fpfh,
@@ -89,7 +106,10 @@ void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::
     matching_result.success = success;
     matching_result.Tctcs = Tctcs;
     matching_result.information = information;
-
+//    if(success)
+//    {
+//        draw_registration_result(source_pcd,target_pcd,Tctcs);
+//    }
 }
 
 void FragmentsRegister::updatePoseGraph(Parser config, const FragmentsRegister::MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph)
@@ -140,11 +160,11 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
 {
     using namespace open3d;
     registration::PoseGraph poseGraph_fragment;
-    auto voxel_size = config.getValue<double>("vexel_size");
+    auto voxel_size = config.getValue<double>("voxel_size");
     //odometry
     if(t == s + 1)
     {
-        io::ReadPoseGraph(Parser::plyFileName(s),poseGraph_fragment);
+        io::ReadPoseGraph(Parser::poseGraphName(s),poseGraph_fragment);
         auto Twcs0 = poseGraph_fragment.nodes_.front().pose_;
         auto Twcsn = poseGraph_fragment.nodes_.back().pose_;
         auto Tcsncs0 = Twcsn.inverse()*Twcs0;
@@ -175,6 +195,11 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
                 4,
                 {checker1,checker2},
                 registration::RANSACConvergenceCriteria(4000000,500));
+//        auto result = registration::FastGlobalRegistration(source_pcd_down,
+//                target_pcd_down,
+//                source_fpfh,
+//                target_fpfh,
+//                registration::FastGlobalRegistrationOption());
         if(result.transformation_.trace() == 4.0)
         {
             Tctcs = Eigen::Matrix4d::Identity();
@@ -193,4 +218,34 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
         }
         Tctcs = result.transformation_;
     }
+}
+
+void FragmentsRegister::draw_registration_result(const open3d::geometry::PointCloud source,
+                                                 const open3d::geometry::PointCloud target,
+                                                 const Eigen::Matrix4d trans)
+{
+    std::shared_ptr<open3d::geometry::PointCloud> source_pcd(new open3d::geometry::PointCloud);
+    std::shared_ptr<open3d::geometry::PointCloud> target_pcd(new open3d::geometry::PointCloud);
+//    auto source_temp = source_pcd;
+//    auto target_temp = target_pcd;
+    *source_pcd = source;
+    *target_pcd = target;
+    source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0.706, 0));
+    target_pcd->PaintUniformColor(Eigen::Vector3d(0, 0.651, 0.929));
+    source_pcd->Transform(trans);
+    open3d::visualization::DrawGeometries({source_pcd,target_pcd});
+}
+
+void FragmentsRegister::optimizePoseGraph(Parser config, std::string poseGraphName)
+{
+    using namespace open3d;
+    utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+    registration::PoseGraph poseGraph;
+    io::ReadPoseGraph(poseGraphName,poseGraph);
+    auto method = registration::GlobalOptimizationLevenbergMarquardt();
+    auto criteria = registration::GlobalOptimizationConvergenceCriteria();
+    auto option = registration::GlobalOptimizationOption(0.07,0.25,0.1,0);
+    registration::GlobalOptimization(poseGraph,method,criteria,option);
+    io::WritePoseGraph("fragments/global_optimized.json",poseGraph); //todo
+    utility::SetVerbosityLevel(utility::VerbosityLevel::Error);
 }

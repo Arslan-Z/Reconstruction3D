@@ -6,15 +6,20 @@
 #include <iostream>
 
 #include "Frame.h"
+#include "util/Parser.h"
 #include "Open3D/Open3D.h"
 namespace Reconstruction
 {
     class Integrater
     {
     public:
+        typedef std::shared_ptr<open3d::integration::ScalableTSDFVolume> Volume;
         Integrater();
-        void init(std::string strSettingPath);
+        static Volume createVolume(const Parser config);
+        static void integrate(const Parser config, const std::string poseGraphName,const size_t n_fragments, const FrameVector frameVector);
+        static void integrateFragment(const Parser config, Volume volume, const size_t fragment_id, const FrameVector frameVector, const Eigen::Matrix4d Tc0w);
         bool integrateFrame(const Frame frame);
+        void init(std::string strSettingPath);
         bool saveTSDF(const char* path);
         bool generateMesh(bool visualize = true);
         bool generatePointCloud(bool visualize = true);

@@ -99,3 +99,94 @@ bool Integrater::generateMesh(bool visualize)
         visualization::DrawGeometriesWithCustomAnimation(
             {mesh}, "Animation", 1920, 1080);
 }
+
+void Integrater::integrate(Parser config, std::string poseGraphName, size_t n_fragments, const FrameVector frameVector)
+{
+    using namespace open3d;
+    auto volume = Reconstruction::Integrater::createVolume(config);
+    registration::PoseGraph global_poseGraph;
+    io::ReadPoseGraph(poseGraphName,global_poseGraph);
+
+    for(size_t fragment_id = 0; fragment_id < n_fragments; fragment_id++)
+    {
+        auto Tc0w = global_poseGraph.nodes_[fragment_id].pose_.inverse();
+        Reconstruction::Integrater::integrateFragment(config,volume,fragment_id,frameVector,Tc0w);
+    }
+//    auto Tc0w = global_poseGraph.nodes_[4].pose_.inverse();
+//    Reconstruction::Integrater::integrateFragment(config,volume,4,frameVector,Tc0w);
+    open3d::visualization::DrawGeometries({volume->ExtractTriangleMesh()});
+}
+
+
+
+Integrater::Volume Integrater::createVolume(Parser config)
+{
+    using namespace open3d;
+
+    double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
+
+    Volume volume(new integration::ScalableTSDFVolume(voxel_size,10*voxel_size,open3d::integration::TSDFVolumeColorType::Gray32));
+
+    return volume;
+}
+
+void Integrater::integrateFragment(Parser config, Integrater::Volume volume, const size_t fragment_id,
+                                   const FrameVector frameVector, const Eigen::Matrix4d Tc0w)
+{
+    using namespace open3d;
+
+
+    size_t n_frame_per_fragment = config.getValue<int>("n_frame_per_fragment");
+
+    FrameVector local_frameVec;
+    local_frameVec.insert(local_frameVec.end(),
+            frameVector.begin()+fragment_id*n_frame_per_fragment,
+                          frameVector.begin()+(fragment_id+1)*n_frame_per_fragment);
+
+    registration::PoseGraph fragment_poseGraph;
+    io::ReadPoseGraph(Parser::poseGraphName(fragment_id),fragment_poseGraph);
+
+    for(size_t node_id = 0; node_id < fragment_poseGraph.nodes_.size(); node_id++)
+    {
+        if(node_id%2 != 0) //every two frames todo
+            continue;
+
+        auto node = fragment_poseGraph.nodes_[node_id];
+        auto frame = local_frameVec[node_id];
+        auto Tcnc0 = node.pose_.inverse();
+        auto pose = Tcnc0 * Tc0w;
+        std::cout<<frame.mGlobalIndex<<std::endl;//todo
+
+
+        int width = config.getValue<int>("Camera.width");
+        int height = config.getValue<int>("Camera.height");
+        double fx = config.getValue<double>("Camera.fx");
+        double fy = config.getValue<double>("Camera.fy");
+        double cx = config.getValue<double>("Camera.cx");
+        double cy = config.getValue<double>("Camera.cy");
+
+        double depth_factor = config.getValue<double>("depth_factor");
+        double depth_truncate = config.getValue<double>("depth_truncate");
+        camera::PinholeCameraIntrinsic intrinsic;
+        intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
+
+        geometry::Image depth;
+        geometry::Image infraRed;
+        bool read = false;
+
+        read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
+        if(!read)
+            continue;
+        read = io::ReadImageFromPNG(frame.getInfraRedImagePath().c_str(),infraRed);
+        if(!read)
+            continue;
+
+        auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
+                infraRed, depth, depth_factor,
+                depth_truncate, true);
+
+        volume->Integrate(*rgbd,intrinsic,pose);
+
+    }
+
+}
