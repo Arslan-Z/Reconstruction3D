@@ -1,0 +1,42 @@
+%YAML:1.0
+
+debug_mode: true
+n_frame_per_fragment: 50
+# TSDF
+TSDF.voxel_size: 0.05
+TSDF.size: 5.0
+TSDF.resolution: 512.0
+TSDF.depth_factor: 1000.0
+TSDF.depth_truncate: 2.5
+# volume
+voxel_size: 0.05
+
+volume_size: 1.5
+sdf_trunc_factor: 7.0
+sdf_trunc: 0.04
+resolution: 512.0
+depth_factor: 1000.0
+depth_truncate: 0.9
+
+#local
+max_depth_diff: 0.07
+preference_loop_closure_local: 0.1
+#registration ransac
+preference_loop_closure: 5.0
+global_registration: fph
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 431.828094
+Camera.fy: 431.828094
+Camera.cx: 323.000610
+Camera.cy: 240.218506
+Camera.k1: 0.
+Camera.k2: 0.
+Camera.width: 640
+Camera.height: 480
+
+#
+n_keyFrames_per_fragment: 25
+intergrate_n_frame_per_fragment: 25
+
+
+
