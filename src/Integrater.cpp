@@ -125,7 +125,7 @@ Integrater::Volume Integrater::createVolume(Parser config)
 
     double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
 
-    Volume volume(new integration::ScalableTSDFVolume(voxel_size,4*voxel_size,open3d::integration::TSDFVolumeColorType::Gray32));
+    Volume volume(new integration::ScalableTSDFVolume(voxel_size,5*voxel_size,open3d::integration::TSDFVolumeColorType::Gray32));
 
     return volume;
 }
@@ -148,7 +148,7 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
 
     for(size_t node_id = 0; node_id < fragment_poseGraph.nodes_.size(); node_id++)
     {
-        if(node_id%3 != 0) //every two frames todo
+        if(node_id%2 != 0) //every two frames todo
             continue;
 
         auto node = fragment_poseGraph.nodes_[node_id];

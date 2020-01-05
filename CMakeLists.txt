@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME} SHARED
         src/Frame.cpp
         src/FragmentMaker.cpp
         src/FragmentsRegister.cpp
+        src/GlobalRefiner.cpp
         src/Integrater.cpp
 	   )
 

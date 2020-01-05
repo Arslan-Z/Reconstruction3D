@@ -18,36 +18,38 @@ int main(int argc,char** argv)
     size_t n_frame_per_fragment = config.getValue<int>("n_frame_per_fragment");
     size_t n_fragments = std::ceil(frameVec.size()/n_frame_per_fragment) + 1;
 
-    Reconstruction::Writer::writeGlobalPoseGraphTo_ITE_Format(frameVec,config);
-    auto frame_opt = Reconstruction::io::Reader::readITEFormat("camera_opt.txt","img_paths.txt");
 //    open3d::registration::PoseGraph poseGraph;
 //    open3d::io::ReadPoseGraph(Parser::poseGraphName(0),poseGraph);
 
 
 //    Reconstruction::FragmentsRegister::registerFragments(config_file,n_fragments);
-//    Reconstruction::Integrater::integrate(config,"fragments/global_optimized.json",n_fragments,frameVec);
+    Reconstruction::Integrater::integrate(config,"fragments/global_optimized.json",n_fragments,frameVec);
+
 //        Reconstruction::FragmentsRegister::optimizePoseGraph(config,Parser::globalPoseGraphName());
-    Reconstruction::Integrater integrater;
-    integrater.init(config_file);
-    int i = 0;
-    for(auto frame : frame_opt)
-    {
-        if(i%3 != 0)
-        {
-            i++;
-            continue;
-        }
-//        if(i<100)
+
+//    Reconstruction::Writer::writeGlobalPoseGraphTo_ITE_Format(frameVec,config);
+//    auto frame_opt = Reconstruction::io::Reader::readITEFormat("camera_opt.txt","img_paths.txt");
+//    Reconstruction::Integrater integrater;
+//    integrater.init(config_file);
+//    int i = 0;
+//    for(auto frame : frame_opt)
+//    {
+//        if(i%3 != 0)
 //        {
 //            i++;
 //            continue;
 //        }
-        if(i>150)
-            break;
-        printf("%d\n",i);
-        i++;
-        integrater.integrateFrame(frame);
-    }
-    integrater.generateMesh();
+////        if(i<100)
+////        {
+////            i++;
+////            continue;
+////        }
+//        if(i>150)
+//            break;
+//        printf("%d\n",i);
+//        i++;
+//        integrater.integrateFrame(frame);
+//    }
+//    integrater.generateMesh();
 
 }

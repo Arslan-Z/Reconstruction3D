@@ -38,7 +38,7 @@ void Writer::writeLocalPoseGraphTo_ITE_Format(const open3d::registration::PoseGr
             auto Tc0cn = node.pose_;
 
             auto Twcn = Twc0*Tc0cn;//todo
-            std::cout<<Twcn<<std::endl;
+//            std::cout<<Twcn<<std::endl;
             angleAxis.fromRotationMatrix(Twcn.block<3,3>(0,0)); //Twc
             Eigen::Vector3d rot = angleAxis.axis();
             rot *= angleAxis.angle();
@@ -72,24 +72,24 @@ void Writer::writeGlobalPoseGraphTo_ITE_Format(const FrameVector frameVector_glo
     FILE* path = fopen(path_file.c_str(),"w");
     fclose(cam);
     fclose(path);
-//    for(size_t node_id = 0; node_id < poseGraph_global.nodes_.size(); node_id++)
-//    {
-//        auto node = poseGraph_global.nodes_[node_id];
-//        registration::PoseGraph poseGraph;
-//        io::ReadPoseGraph(Parser::poseGraphName(node_id),poseGraph);
-//        writeLocalPoseGraphTo_ITE_Format(poseGraph,frameVector_global,
-//                                         cam_file,path_file,node_id,
-//                                         node.pose_,
-//                                         config);
-//
-//    }
-    size_t node_id = 7;
-    auto node = poseGraph_global.nodes_[node_id];
-    registration::PoseGraph poseGraph;
-    io::ReadPoseGraph(Parser::poseGraphName(node_id),poseGraph);
-    writeLocalPoseGraphTo_ITE_Format(poseGraph,frameVector_global,
-                                     cam_file,path_file,node_id,
-                                     node.pose_,
-                                     config);
+    for(size_t node_id = 0; node_id < poseGraph_global.nodes_.size(); node_id++)
+    {
+        auto node = poseGraph_global.nodes_[node_id];
+        registration::PoseGraph poseGraph;
+        io::ReadPoseGraph(Parser::poseGraphName(node_id),poseGraph);
+        writeLocalPoseGraphTo_ITE_Format(poseGraph,frameVector_global,
+                                         cam_file,path_file,node_id,
+                                         node.pose_,
+                                         config);
+
+    }
+//    size_t node_id = 7;
+//    auto node = poseGraph_global.nodes_[node_id];
+//    registration::PoseGraph poseGraph;
+//    io::ReadPoseGraph(Parser::poseGraphName(node_id),poseGraph);
+//    writeLocalPoseGraphTo_ITE_Format(poseGraph,frameVector_global,
+//                                     cam_file,path_file,node_id,
+//                                     node.pose_,
+//                                     config);
 
 }
