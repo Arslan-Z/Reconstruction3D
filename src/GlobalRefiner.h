@@ -5,6 +5,9 @@
 #ifndef RECONSTRUCTION3D_GLOBALREFINER_H
 #define RECONSTRUCTION3D_GLOBALREFINER_H
 
+#include "RegistrationMethods.h"
+#include "Open3D/Open3D.h"
+
 namespace Reconstruction
 {
     class GlobalRefiner

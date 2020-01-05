@@ -50,8 +50,6 @@ namespace Reconstruction
                                                const open3d::registration::Feature source_fpfh,
                                                const open3d::registration::Feature target_fpfh,
                                                Eigen::Matrix4d& Tctcs, Eigen::Matrix6d& information);
-//        static void mutiScaleICP();
-        static bool register_point_cloud_fpfh();
         static void updatePoseGraph(Parser config, const MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph);
         static void draw_registration_result(const open3d::geometry::PointCloud source, const open3d::geometry::PointCloud target,
                                              const Eigen::Matrix4d trans);

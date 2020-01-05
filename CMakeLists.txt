@@ -27,10 +27,14 @@ add_library(${PROJECT_NAME} SHARED
         src/util/Converter.cpp
         src/util/Parser.cpp
         src/Frame.cpp
+
         src/FragmentMaker.cpp
         src/FragmentsRegister.cpp
         src/GlobalRefiner.cpp
         src/Integrater.cpp
+
+        src/RegistrationMethods.cpp
+        src/PoseGraphMethods.cpp
 	   )
 
 target_link_libraries(${PROJECT_NAME} ${Open3D_LIBRARIES})
