@@ -72,7 +72,6 @@ void FragmentMaker::makePoseGraph(size_t fragment_id, FrameVector frameVector, P
 //                                                                                     Tctcs);
                 auto information = Eigen::Matrix6d::Identity();
                 registration::PoseGraphEdge edge(s,t,Tctcs,information,true);
-//                edge.uncertain_= true;
                 poseGraph.edges_.push_back(edge);
             }
         }

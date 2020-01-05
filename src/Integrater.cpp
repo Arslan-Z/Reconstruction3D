@@ -107,13 +107,13 @@ void Integrater::integrate(Parser config, std::string poseGraphName, size_t n_fr
     registration::PoseGraph global_poseGraph;
     io::ReadPoseGraph(poseGraphName,global_poseGraph);
 
-    for(size_t fragment_id = 0; fragment_id < n_fragments; fragment_id++)
+    for(size_t fragment_id = 0; fragment_id < global_poseGraph.nodes_.size(); fragment_id++)
     {
-        auto Tc0w = global_poseGraph.nodes_[fragment_id].pose_.inverse();
-        Reconstruction::Integrater::integrateFragment(config,volume,fragment_id,frameVector,Tc0w);
+        auto Twc0 = global_poseGraph.nodes_[fragment_id].pose_;
+        Reconstruction::Integrater::integrateFragment(config,volume,fragment_id,frameVector,Twc0);
     }
-//    auto Tc0w = global_poseGraph.nodes_[4].pose_.inverse();
-//    Reconstruction::Integrater::integrateFragment(config,volume,4,frameVector,Tc0w);
+//    auto Tc0w = global_poseGraph.nodes_[11].pose_.inverse();
+//    Reconstruction::Integrater::integrateFragment(config,volume,11,frameVector,Tc0w);
     open3d::visualization::DrawGeometries({volume->ExtractTriangleMesh()});
 }
 
@@ -124,14 +124,15 @@ Integrater::Volume Integrater::createVolume(Parser config)
     using namespace open3d;
 
     double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
-
-    Volume volume(new integration::ScalableTSDFVolume(voxel_size,5*voxel_size,open3d::integration::TSDFVolumeColorType::Gray32));
+//    double sdf_trunc_factor = config.getValue<double>("sdf_trunc_factor");
+    double sdf_trunc = config.getValue<double>("sdf_trunc");
+    Volume volume(new integration::ScalableTSDFVolume(voxel_size,sdf_trunc,open3d::integration::TSDFVolumeColorType::Gray32));
 
     return volume;
 }
 
 void Integrater::integrateFragment(Parser config, Integrater::Volume volume, const size_t fragment_id,
-                                   const FrameVector frameVector, const Eigen::Matrix4d Tc0w)
+                                   const FrameVector frameVector, const Eigen::Matrix4d Twc0)
 {
     using namespace open3d;
 
@@ -153,8 +154,9 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
 
         auto node = fragment_poseGraph.nodes_[node_id];
         auto frame = local_frameVec[node_id];
-        auto Tcnc0 = node.pose_.inverse();
-        auto pose = Tcnc0 * Tc0w;
+        auto Tc0cn = node.pose_;
+        auto pose = Twc0 * Tc0cn;
+
         std::cout<<frame.mGlobalIndex<<std::endl;//todo
 
 
@@ -176,16 +178,16 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
 
         read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
         if(!read)
-            continue;
+            break;
         read = io::ReadImageFromPNG(frame.getInfraRedImagePath().c_str(),infraRed);
         if(!read)
-            continue;
+            break;
 
         auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
                 infraRed, depth, depth_factor,
                 depth_truncate, true);
 
-        volume->Integrate(*rgbd,intrinsic,pose);
+        volume->Integrate(*rgbd,intrinsic,pose.inverse());
 
     }
 

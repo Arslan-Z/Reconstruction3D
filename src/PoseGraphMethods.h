@@ -36,6 +36,8 @@ namespace Reconstruction
                 const MatchingResult matching_result,
                 Eigen::Matrix4d& Tcsw,
                 open3d::registration::PoseGraph& poseGraph);
+        static void optimizePoseGraphForScene(const std::string config_file, const std::string source_poseGraphName, const std::string refined_poseGraphName);
+        static void optimizePoseGraphForFragment(const std::string config_file, const std::string source_poseGraphName, const std::string refined_poseGraphName);
     };
 }
 

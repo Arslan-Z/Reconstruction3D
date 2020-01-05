@@ -23,12 +23,12 @@ void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
         utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
     }
 
-    std::vector<MatchingResult> matching_results;
+    std::vector<PoseGraphMethods::MatchingResult> matching_results;
     for(size_t s = 0; s < n_fragments; s++)
     {
         for(size_t t = s + 1; t < n_fragments; t++)
         {
-            matching_results.push_back(MatchingResult(s,t));
+            matching_results.push_back(PoseGraphMethods::MatchingResult(s,t));
         }
     }
     if(multi_thread)
@@ -48,21 +48,22 @@ void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
             registerPoincloudPair(config, matching_result);
         }
     }
-    registration::PoseGraph poseGraph;
-    poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity())); //base node
-    Eigen::Matrix4d current_Tcsw = Eigen::Matrix4d::Identity();
-
-    for(auto matching_result : matching_results)
-    {
-        if(matching_result.success)
-        {
-            updatePoseGraph(config, matching_result, current_Tcsw, poseGraph);
-        }
-    }
-    io::WritePoseGraph("fragments/global.json",poseGraph);//todo
+    PoseGraphMethods::createPoseGraphFromMatches(matching_results,"fragments/global.json");
+//    registration::PoseGraph poseGraph;
+//    poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity())); //base node
+//    Eigen::Matrix4d current_Tcsw = Eigen::Matrix4d::Identity();
+//
+//    for(auto matching_result : matching_results)
+//    {
+//        if(matching_result.success)
+//        {
+//            updatePoseGraph(config, matching_result, current_Tcsw, poseGraph);
+//        }
+//    }
+//    io::WritePoseGraph("fragments/global.json",poseGraph);//todo
 }
 
-void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::MatchingResult& matching_result)
+void FragmentsRegister::registerPoincloudPair(Parser config, PoseGraphMethods::MatchingResult& matching_result)
 {
     using namespace open3d;
     auto s = matching_result.s;
@@ -112,7 +113,7 @@ void FragmentsRegister::registerPoincloudPair(Parser config, FragmentsRegister::
 //    }
 }
 
-void FragmentsRegister::updatePoseGraph(Parser config, const FragmentsRegister::MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph)
+void FragmentsRegister::updatePoseGraph(Parser config, const PoseGraphMethods::MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph)
 {
     using namespace open3d;
     auto s = matching_result.s;

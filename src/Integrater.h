@@ -17,7 +17,7 @@ namespace Reconstruction
         Integrater();
         static Volume createVolume(const Parser config);
         static void integrate(const Parser config, const std::string poseGraphName,const size_t n_fragments, const FrameVector frameVector);
-        static void integrateFragment(const Parser config, Volume volume, const size_t fragment_id, const FrameVector frameVector, const Eigen::Matrix4d Tc0w);
+        static void integrateFragment(const Parser config, Volume volume, const size_t fragment_id, const FrameVector frameVector, const Eigen::Matrix4d Twc0);
         bool integrateFrame(const Frame frame);
         void init(std::string strSettingPath);
         bool saveTSDF(const char* path);

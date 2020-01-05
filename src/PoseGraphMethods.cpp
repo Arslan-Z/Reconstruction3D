@@ -3,6 +3,7 @@
 //
 
 #include "PoseGraphMethods.h"
+#include "Open3D/Registration/GlobalOptimization.h"
 
 using namespace Reconstruction;
 
@@ -71,4 +72,24 @@ std::vector<PoseGraphMethods::MatchingResult> PoseGraphMethods::createMatchesFro
 
     return matchingResults;
 
+}
+
+void PoseGraphMethods::optimizePoseGraphForScene(const std::string config_file,const std::string source_poseGraphName, const std::string refined_poseGraphName)
+{
+    using namespace open3d;
+    Parser config;
+    config.load(config_file);
+
+    utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+    registration::PoseGraph poseGraph;
+    io::ReadPoseGraph(source_poseGraphName,poseGraph);
+    auto method = registration::GlobalOptimizationLevenbergMarquardt();
+    auto criteria = registration::GlobalOptimizationConvergenceCriteria();
+    auto max_correspondence_distance = config.getValue<double>("voxel_size") * 1.4;
+    auto preference_loop_closure = config.getValue<double>("preference_loop_closure");
+    auto option = registration::GlobalOptimizationOption(max_correspondence_distance,
+                                                         0.25,preference_loop_closure,0);
+    registration::GlobalOptimization(poseGraph,method,criteria,option);
+    io::WritePoseGraph(refined_poseGraphName,poseGraph);
+    utility::SetVerbosityLevel(utility::VerbosityLevel::Error);
 }

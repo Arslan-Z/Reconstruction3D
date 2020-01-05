@@ -15,7 +15,11 @@ void GlobalRefiner::refine(std::string config_file, std::string global_poseGraph
     {
         registerPointCloudPair(config,match);
     }
-    PoseGraphMethods::createPoseGraphFromMatches(matches,"fragments/global_opt_refined.json");//todo
+    PoseGraphMethods::createPoseGraphFromMatches(matches,"fragments/global_optimized_temp.json");//todo
+    PoseGraphMethods::optimizePoseGraphForScene(
+            config_file,
+            "fragments/global_optimized_temp.json",
+            "fragments/global_optimized_refined.json");
 }
 
 void GlobalRefiner::registerPointCloudPair(Parser config, Reconstruction::PoseGraphMethods::MatchingResult &match)
