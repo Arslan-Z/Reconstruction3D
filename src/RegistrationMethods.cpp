@@ -9,11 +9,11 @@
 using namespace Reconstruction;
 
 void RegistrationMethods::mutiScaleICP(Parser config,
-        size_t s, size_t t,
         open3d::geometry::PointCloud source_pcd,
         open3d::geometry::PointCloud target_pcd,
         std::vector<double> voxel_sizes, std::vector<size_t> max_iters,
-        Eigen::Matrix4d &Tctcs, Eigen::Matrix6d &information)
+        Eigen::Matrix4d &Tctcs, Eigen::Matrix6d &information,
+        bool visualize)
 {
 
     if(voxel_sizes.size()!=max_iters.size())
@@ -51,6 +51,10 @@ void RegistrationMethods::mutiScaleICP(Parser config,
                     result.transformation_
             );
             Tctcs = result.transformation_;
+        }
+        if(visualize)
+        {
+            RegistrationMethods::draw_registration_result(source_pcd,target_pcd,current_Tctcs);
         }
     }
 

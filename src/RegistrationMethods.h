@@ -19,12 +19,13 @@ namespace Reconstruction
                                               open3d::registration::Feature target_fpfh,
                                               Eigen::Matrix4d& Tctcs, Eigen::Matrix6d& information);
 
-        static void mutiScaleICP(Parser config, size_t s, size_t t,
+        static void mutiScaleICP(Parser config,
                                  open3d::geometry::PointCloud source_pcd,
                                  open3d::geometry::PointCloud target_pcd,
                                  std::vector<double> voxel_sizes,
                                  std::vector<size_t> max_iters,
-                                 Eigen::Matrix4d& Tctcs, Eigen::Matrix6d& information);
+                                 Eigen::Matrix4d& Tctcs, Eigen::Matrix6d& information,
+                                 bool visualize=false);
 
         static void draw_registration_result(const open3d::geometry::PointCloud source, const open3d::geometry::PointCloud target,
                                              const Eigen::Matrix4d trans);

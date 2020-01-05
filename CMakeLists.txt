@@ -45,6 +45,8 @@ target_link_libraries(makeSegment   ${PROJECT_NAME})
 add_executable(registerSegment src/tests/test_register_fragments.cpp)
 target_link_libraries(registerSegment  ${PROJECT_NAME})
 
+add_executable(globalRefiner src/tests/test_global_refiner.cpp)
+target_link_libraries(globalRefiner   ${PROJECT_NAME})
 
 
 
