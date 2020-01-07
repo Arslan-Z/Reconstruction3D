@@ -29,6 +29,7 @@ namespace Reconstruction
 
         static void draw_registration_result(const open3d::geometry::PointCloud source, const open3d::geometry::PointCloud target,
                                              const Eigen::Matrix4d trans);
+
     };
 }
 

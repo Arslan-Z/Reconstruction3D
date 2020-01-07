@@ -107,7 +107,7 @@ void Integrater::integrate(Parser config, std::string poseGraphName, size_t n_fr
     registration::PoseGraph global_poseGraph;
     io::ReadPoseGraph(poseGraphName,global_poseGraph);
 
-    for(size_t fragment_id = 0; fragment_id < global_poseGraph.nodes_.size(); fragment_id++)
+    for(size_t fragment_id = 0; fragment_id < global_poseGraph.nodes_.size()-1; fragment_id++)
     {
         auto Twc0 = global_poseGraph.nodes_[fragment_id].pose_;
         Reconstruction::Integrater::integrateFragment(config,volume,fragment_id,frameVector,Twc0);

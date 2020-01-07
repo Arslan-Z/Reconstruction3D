@@ -1,17 +1,12 @@
 //
-// Created by jojo on 01.01.20.
+// Created by jojo on 07.01.20.
 //
 
-#include "LocalRefiner.h"
+#include "GeometryMethods.h"
 
 using namespace Reconstruction;
 
-open3d::geometry::TriangleMesh  LocalRefiner::refineAndCreateMesh(std::vector<std::reference_wrapper<Frame>> frameVectorRef, Parser config)
-{
-    using namespace open3d;
-}
-
-bool LocalRefiner::createRGBDImageFromFrame(Frame frame, Parser config, open3d::geometry::RGBDImage& rgbd)
+bool GeometryMethods::createRGBDImageFromFrame(const Frame frame, const Parser config, open3d::geometry::RGBDImage &rgbd)
 {
     using namespace open3d;
     geometry::Image depth;

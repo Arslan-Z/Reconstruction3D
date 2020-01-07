@@ -3,6 +3,7 @@
 //
 
 #include "FragmentMaker.h"
+#include "LocalRefiner.h"
 
 using namespace Reconstruction;
 
@@ -11,6 +12,10 @@ void FragmentMaker::processSingleFragment(size_t fragment_id, FrameVector frameV
     Parser config;
     config.load(config_file);
     makePoseGraph(fragment_id, frameVector, config);
+    std::vector<std::reference_wrapper<Frame>> frameVecRef;
+    frameVecRef.insert(frameVecRef.end(),frameVector.begin(),frameVector.end());
+//    LocalRefiner::refine(frameVecRef);
+
     optimizePoseGraph(fragment_id,config);
     makePointCloud(fragment_id,frameVector,config);
 }
@@ -140,10 +145,10 @@ void FragmentMaker::makePointCloud(size_t fragment_id,FrameVector frameVector, P
             bool read = false;
             read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
             if(!read)
-                continue;
+                break;
             read = io::ReadImageFromPNG(frame.getInfraRedImagePath().c_str(),infraRed);
             if(!read)
-                continue;
+                break;
             auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
                     infraRed, depth, depth_factor,
                     depth_truncate, true);
@@ -155,7 +160,7 @@ void FragmentMaker::makePointCloud(size_t fragment_id,FrameVector frameVector, P
     mesh->ComputeVertexNormals();
     auto pcd = volume.ExtractPointCloud();
 
-    visualization::DrawGeometries({pcd});
+//    visualization::DrawGeometries({pcd});
     io::WritePointCloud(TemplatePoinCloudName(fragment_id),*pcd);
 }
 

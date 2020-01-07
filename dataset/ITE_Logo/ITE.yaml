@@ -11,19 +11,19 @@ TSDF.depth_truncate: 2.5
 # volume
 voxel_size: 0.05
 
-volume_size: 1.5
+volume_size: 2.0
+resolution: 512.0
 sdf_trunc_factor: 7.0
 sdf_trunc: 0.04
-resolution: 512.0
 depth_factor: 1000.0
-depth_truncate: 0.9
+depth_truncate: 1.0
 
 #local
 max_depth_diff: 0.07
 preference_loop_closure_local: 0.1
 #registration ransac
 preference_loop_closure: 5.0
-global_registration: fph
+global_registration: ransac
 # Camera calibration and distortion parameters (OpenCV) 
 Camera.fx: 431.828094
 Camera.fy: 431.828094
