@@ -6,6 +6,52 @@
 #include "GeometryMethods.h"
 using namespace Reconstruction;
 
+open3d::geometry::PointCloud LocalRefiner::refineAndCreateMPointCloud(std::vector<std::reference_wrapper<Frame> > frameVectorRef, Parser config)
+{
+    using namespace open3d;
+    std::vector<std::shared_ptr<geometry::RGBDImage>> rgbdVec;
+    camera::PinholeCameraTrajectory camera;
+    FrameVector frameVector;
+    for(auto frame : frameVectorRef)
+    {
+        geometry::RGBDImage rgbd;
+        bool success = GeometryMethods::createRGBDImageFromFrame(frame,config,rgbd,false);
+        if(!success)
+            break;
+        rgbdVec.push_back(std::make_shared<geometry::RGBDImage>(rgbd));
+        frameVector.push_back(frame);
+    }
+    bool success = createCameraTrajectoryFromFrames(config,frameVector,camera);
+    if(!success)
+        return geometry::PointCloud();
+
+    std::shared_ptr<geometry::TriangleMesh> mesh;
+    std::shared_ptr<geometry::PointCloud> pcd;
+
+    GeometryMethods::createMeshFromFrames(frameVector,config,mesh,true);
+
+    auto option = color_map::ColorMapOptimizationOption();
+    option.maximum_iteration_ = 300;
+    option.non_rigid_camera_coordinate_ = false;
+
+    bool debug = config.getValue<bool>("debug_mode");
+    if(debug)
+        utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+
+    color_map::ColorMapOptimization(*mesh,rgbdVec,camera,option);
+
+    for(size_t frame_id = 0; frame_id < frameVectorRef.size(); frame_id++)
+    {
+        auto Tcw = camera.parameters_[frame_id].extrinsic_;
+        Eigen::Affine3d Tcw_affine;
+        Tcw_affine.matrix() = Tcw;
+        frameVectorRef[frame_id].get().setFromAffine3d(Tcw_affine);
+    }
+
+    GeometryMethods::createPointCloundFromFrames(frameVector,config,pcd,true);
+    return *pcd;
+}
+
 open3d::geometry::TriangleMesh  LocalRefiner::refineAndCreateMesh(std::vector<std::reference_wrapper<Frame>> frameVectorRef, Parser config)
 {
     using namespace open3d;
@@ -32,10 +78,11 @@ open3d::geometry::TriangleMesh  LocalRefiner::refineAndCreateMesh(std::vector<st
     option.maximum_iteration_ = 300;
     option.non_rigid_camera_coordinate_ = false;
 
-    visualization::DrawGeometries({mesh});
-    utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+    bool debug = config.getValue<bool>("debug_mode");
+    if(debug)
+        utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+
     color_map::ColorMapOptimization(*mesh,rgbdVec,camera,option);
-    visualization::DrawGeometries({mesh});
 
     for(size_t frame_id = 0; frame_id < frameVectorRef.size(); frame_id++)
     {
@@ -43,8 +90,6 @@ open3d::geometry::TriangleMesh  LocalRefiner::refineAndCreateMesh(std::vector<st
         Eigen::Affine3d Tcw_affine;
         Tcw_affine.matrix() = Tcw;
         frameVectorRef[frame_id].get().setFromAffine3d(Tcw_affine);
-//        std::cout<<frameVectorRef[frame_id].get().getConstTcw()<<std::endl;
-//        std::cout<<frameVector[frame_id].getConstTcw()<<std::endl;
     }
     return *mesh;
 

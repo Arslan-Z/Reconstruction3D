@@ -15,6 +15,18 @@ namespace Reconstruction
     {
     public:
         static bool createRGBDImageFromFrame(const Frame frame, const Parser config, open3d::geometry::RGBDImage& rgbd, bool useIRImg = true);
+        static bool createMeshAndPointCloudFromFrames(
+                const FrameVector frameVector,
+                const Parser config,
+                std::shared_ptr<open3d::geometry::TriangleMesh>& mesh,
+                std::shared_ptr<open3d::geometry::PointCloud>& pcd,
+                bool color = false);
+        static bool createPointCloundFromFrames(
+                const FrameVector frameVector,
+                const Parser config,
+                std::shared_ptr<open3d::geometry::PointCloud>& pcd,
+                bool color = false
+                );
         static bool createMeshFromFrames(
                 const FrameVector frameVector,
                 const Parser config,

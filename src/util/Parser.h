@@ -14,6 +14,8 @@ class Parser
 public:
     void load(std::string filename);
     static std::string globalPoseGraphName();
+    static std::string globalPoseGraphOptName();
+    static std::string globalPoseGraphOptRefinedName();
     static std::string poseGraphName(size_t fragment_id);
     static  std::string plyFileName(size_t fragment_id);
     template <typename  T>

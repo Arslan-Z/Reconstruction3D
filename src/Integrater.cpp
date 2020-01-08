@@ -1,5 +1,7 @@
 #include "Integrater.h"
 #include "util/Parser.h"
+#include "GeometryMethods.h"
+
 using namespace Reconstruction;
 
 Integrater::Integrater()
@@ -123,10 +125,16 @@ Integrater::Volume Integrater::createVolume(Parser config)
 {
     using namespace open3d;
 
-    double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
-//    double sdf_trunc_factor = config.getValue<double>("sdf_trunc_factor");
-    double sdf_trunc = config.getValue<double>("sdf_trunc");
-    Volume volume(new integration::ScalableTSDFVolume(voxel_size,sdf_trunc,open3d::integration::TSDFVolumeColorType::Gray32));
+    double voxel_size = config.getValue<double>("Integrater.volume_size")/config.getValue<double>("Integrater.resolution");
+    double sdf_trunc = config.getValue<double>("Integrater.sdf_trunc");
+    bool color = config.getValue<bool>("Integrater.color");
+    integration::TSDFVolumeColorType type;
+    if(color)
+        type = integration::TSDFVolumeColorType::RGB8;
+    else
+        type = integration::TSDFVolumeColorType::Gray32;
+
+    Volume volume(new integration::ScalableTSDFVolume(voxel_size,sdf_trunc,type));
 
     return volume;
 }
@@ -137,7 +145,7 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
     using namespace open3d;
 
 
-    size_t n_frame_per_fragment = config.getValue<int>("n_frame_per_fragment");
+    size_t n_frame_per_fragment = config.getValue<int>("n_frames_per_fragment");
 
     FrameVector local_frameVec;
     local_frameVec.insert(local_frameVec.end(),
@@ -157,7 +165,10 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
         auto Tc0cn = node.pose_;
         auto pose = Twc0 * Tc0cn;
 
-        std::cout<<frame.mGlobalIndex<<std::endl;//todo
+//        std::cout<<frame.mGlobalIndex<<std::endl;//todo
+//        printf("\r%d",(int) frame.mGlobalIndex);
+        geometry::RGBDImage rgbd;
+        GeometryMethods::createRGBDImageFromFrame(frame,config,rgbd,false);
 
 
         int width = config.getValue<int>("Camera.width");
@@ -167,27 +178,10 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
         double cx = config.getValue<double>("Camera.cx");
         double cy = config.getValue<double>("Camera.cy");
 
-        double depth_factor = config.getValue<double>("depth_factor");
-        double depth_truncate = config.getValue<double>("depth_truncate");
         camera::PinholeCameraIntrinsic intrinsic;
         intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
 
-        geometry::Image depth;
-        geometry::Image infraRed;
-        bool read = false;
-
-        read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
-        if(!read)
-            break;
-        read = io::ReadImageFromPNG(frame.getInfraRedImagePath().c_str(),infraRed);
-        if(!read)
-            break;
-
-        auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
-                infraRed, depth, depth_factor,
-                depth_truncate, true);
-
-        volume->Integrate(*rgbd,intrinsic,pose.inverse());
+        volume->Integrate(rgbd,intrinsic,pose.inverse());
 
     }
 

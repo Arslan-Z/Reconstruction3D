@@ -15,8 +15,8 @@ int main(int argc,char** argv)
     std::string config_file = "../dataset/ITE_Logo/ITE.yaml";
     Parser config;
     config.load(config_file);
-    size_t n_frame_per_fragment = config.getValue<int>("n_frame_per_fragment");
-    size_t n_fragments = std::ceil(frameVec.size()/n_frame_per_fragment) + 1;
+    size_t n_frames_per_fragment = config.getValue<int>("n_frames_per_fragment");
+    size_t n_fragments = std::ceil(frameVec.size()/n_frames_per_fragment) + 1;
 
 //    open3d::registration::PoseGraph poseGraph;
 //    open3d::io::ReadPoseGraph(Parser::poseGraphName(0),poseGraph);

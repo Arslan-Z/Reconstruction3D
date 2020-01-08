@@ -10,13 +10,13 @@ void FragmentsRegister::registerFragments(std::string config_file, size_t n_frag
 {
     Parser config;
     config.load(config_file);
-    makePoseGraphForScene(config, n_fragments);
-    optimizePoseGraph(config,"fragments/global.json");
+    makePoseGraphForScene(config, n_fragments,Parser::globalPoseGraphName());
+    optimizePoseGraph(config,Parser::globalPoseGraphName());
 }
-void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
+void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments, const std::string poseGraphName)
 {
     using namespace open3d;
-    bool debug = true;
+    bool debug = config.getValue<bool>("debug_mode");
     bool multi_thread = false;
     if(debug)
     {
@@ -48,19 +48,8 @@ void FragmentsRegister::makePoseGraphForScene(Parser config, size_t n_fragments)
             registerPoincloudPair(config, matching_result);
         }
     }
-    PoseGraphMethods::createPoseGraphFromMatches(matching_results,"fragments/global.json");
-//    registration::PoseGraph poseGraph;
-//    poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity())); //base node
-//    Eigen::Matrix4d current_Tcsw = Eigen::Matrix4d::Identity();
-//
-//    for(auto matching_result : matching_results)
-//    {
-//        if(matching_result.success)
-//        {
-//            updatePoseGraph(config, matching_result, current_Tcsw, poseGraph);
-//        }
-//    }
-//    io::WritePoseGraph("fragments/global.json",poseGraph);//todo
+    PoseGraphMethods::createPoseGraphFromMatches(matching_results,Parser::globalPoseGraphName());
+
 }
 
 void FragmentsRegister::registerPoincloudPair(Parser config, PoseGraphMethods::MatchingResult& matching_result)
@@ -107,10 +96,6 @@ void FragmentsRegister::registerPoincloudPair(Parser config, PoseGraphMethods::M
     matching_result.success = success;
     matching_result.Tctcs = Tctcs;
     matching_result.information = information;
-//    if(success)
-//    {
-//    draw_registration_result(source_pcd_down,target_pcd_down,Tctcs);
-//    }
 }
 
 void FragmentsRegister::updatePoseGraph(Parser config, const PoseGraphMethods::MatchingResult matching_result, Eigen::Matrix4d& Tcsw, open3d::registration::PoseGraph& poseGraph)
@@ -145,7 +130,7 @@ void FragmentsRegister::preprocessPointCloud(Parser config, const open3d::geomet
 {
     using namespace open3d;
     auto voxel_size = config.getValue<double>("voxel_size");
-    pcd_down = *pcd.VoxelDownSample(2*voxel_size);
+    pcd_down = *pcd.VoxelDownSample(voxel_size);
     pcd_down.EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
 
     pcd_fpfh = *registration::ComputeFPFHFeature(pcd_down,geometry::KDTreeSearchParamHybrid(voxel_size*5.0,100));
@@ -171,15 +156,17 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
         auto Tcsncs0 = Twcsn.inverse()*Twcs0;
 
         Tctcs = Tcsncs0; //initial value
+        draw_registration_result(source_pcd_down,target_pcd_down,Tctcs);
 
         auto result = registration::RegistrationColoredICP(source_pcd_down,target_pcd_down,voxel_size,Tctcs,
-                registration::ICPConvergenceCriteria(1e-6,1e-6,50));
+                registration::ICPConvergenceCriteria(1e-6,1e-6,500));
 
         Tctcs = result.transformation_;
         information = registration::GetInformationMatrixFromPointClouds(source_pcd_down,
                                                                         target_pcd_down,
                                                                         voxel_size*1.4,
                                                                         Tctcs);
+        draw_registration_result(source_pcd_down,target_pcd_down,Tctcs);
         return true;
     }
     else
@@ -188,14 +175,6 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
         registration::RegistrationResult result;
         if(method == "ransac")
         {
-//            registration::PoseGraph global_poseGraph;
-//            io::ReadPoseGraph(Parser::globalPoseGraphName(),global_poseGraph);
-//            auto Twcs = global_poseGraph.nodes_[s].pose_;
-//            auto Twct = global_poseGraph.nodes_[t].pose_;
-//            Tctcs = Twct.inverse()*Twcs; //initial value
-
-//            auto result = registration::RegistrationColoredICP(source_pcd_down,target_pcd_down,voxel_size,Tctcs,
-//                                                               registration::ICPConvergenceCriteria(1e-6,1e-6,50));
             auto distance_threshold = voxel_size * 1.4;
             auto checker1 = registration::CorrespondenceCheckerBasedOnEdgeLength(0.9);
             auto checker2 = registration::CorrespondenceCheckerBasedOnDistance(distance_threshold);
@@ -260,7 +239,10 @@ void FragmentsRegister::draw_registration_result(const open3d::geometry::PointCl
 void FragmentsRegister::optimizePoseGraph(Parser config, std::string poseGraphName)
 {
     using namespace open3d;
-    utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+    bool debug = config.getValue<bool>("debug_mode");
+    if(debug)
+        utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+
     registration::PoseGraph poseGraph;
     io::ReadPoseGraph(poseGraphName,poseGraph);
     auto method = registration::GlobalOptimizationLevenbergMarquardt();
@@ -270,6 +252,5 @@ void FragmentsRegister::optimizePoseGraph(Parser config, std::string poseGraphNa
     auto option = registration::GlobalOptimizationOption(max_correspondence_distance,
             0.25,preference_loop_closure,0);
     registration::GlobalOptimization(poseGraph,method,criteria,option);
-    io::WritePoseGraph("fragments/global_optimized.json",poseGraph); //todo
-    utility::SetVerbosityLevel(utility::VerbosityLevel::Error);
+    io::WritePoseGraph("fragments/global_optimized.json",poseGraph);
 }

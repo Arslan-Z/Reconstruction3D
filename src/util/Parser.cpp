@@ -59,6 +59,16 @@ std::string Parser::globalPoseGraphName()
     return "fragments/global.json";
 }
 
+std::string Parser::globalPoseGraphOptName()
+{
+    return "fragments/global_optimized.json";
+}
+
+std::string Parser::globalPoseGraphOptRefinedName()
+{
+    return "fragments/global_optimized_refined.json";
+}
+
 
 template<>
 double Parser::getValue(std::string key)

@@ -25,24 +25,7 @@ namespace Reconstruction
         static void optimizePoseGraph(Parser config, std::string poseGraphName);
 
     private:
-//        struct MatchingResult
-//        {
-//            MatchingResult(size_t s_, size_t t_)
-//            {
-//                s = s_;
-//                t = t_;
-//                success = false;
-//                Tctcs = Eigen::Matrix4d::Identity();
-//                information = Eigen::Matrix6d ::Identity();
-//            }
-//            size_t s;
-//            size_t t;
-//            bool success;
-//            Eigen::Matrix4d Tctcs;
-//            Eigen::Matrix6d information;
-//        };
-
-        static void makePoseGraphForScene(Parser config, size_t n_fragments);
+        static void makePoseGraphForScene(Parser config, size_t n_fragments, const std::string poseGraphName);
         static void registerPoincloudPair(Parser config, PoseGraphMethods::MatchingResult& matching_result);
         static void preprocessPointCloud(Parser config, const open3d::geometry::PointCloud pcd,
                                          open3d::geometry::PointCloud& pcd_down,

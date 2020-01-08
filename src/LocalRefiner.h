@@ -14,6 +14,7 @@ namespace Reconstruction
     {
     public:
         static open3d::geometry::TriangleMesh refineAndCreateMesh(std::vector<std::reference_wrapper<Frame>> frameVectorRef, const Parser config);
+        static open3d::geometry::PointCloud refineAndCreateMPointCloud(std::vector<std::reference_wrapper<Frame>> frameVectorRef, const Parser config);
     private:
         static open3d::geometry::TriangleMesh createMesh(FrameVector frameVector);
         static bool createCameraTrajectoryFromFrames(
