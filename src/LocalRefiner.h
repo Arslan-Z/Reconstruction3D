@@ -16,7 +16,10 @@ namespace Reconstruction
         static open3d::geometry::TriangleMesh refineAndCreateMesh(std::vector<std::reference_wrapper<Frame>> frameVectorRef, const Parser config);
     private:
         static open3d::geometry::TriangleMesh createMesh(FrameVector frameVector);
-        static bool createRGBDImageFromFrame(const Frame frame, const Parser config, open3d::geometry::RGBDImage& rgbd);
+        static bool createCameraTrajectoryFromFrames(
+                const Parser config,
+                const FrameVector frameVector,
+                open3d::camera::PinholeCameraTrajectory& camera);
     };
 }
 

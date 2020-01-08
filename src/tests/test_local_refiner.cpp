@@ -1,16 +1,14 @@
 //
-// Created by jojo on 31.12.19.
+// Created by jojo on 07.01.20.
 //
-#include "stdio.h"
 #include "../io/Reader.h"
-#include "../Integrater.h"
-#include "../FragmentMaker.h"
-#include "../GeometryMethods.h"
+#include "../util/Parser.h"
+#include "../LocalRefiner.h"
 
 int main(int argc,char** argv)
 {
     auto frameVec = Reconstruction::io::Reader::readITEFrames("../dataset/ITE_Logo/cameras.txt",
-            "../dataset/ITE_Logo/");
+                                                              "../dataset/ITE_Logo/");
     std::string config_file = "../dataset/ITE_Logo/ITE.yaml";
     Parser config;
     config.load(config_file);
@@ -40,9 +38,8 @@ int main(int argc,char** argv)
     }
     for(auto fragment : fragments)
     {
-        static size_t i = 0;
-        Reconstruction::FragmentMaker::processSingleFragment(i,fragment,config_file);
-        i++;
+        std::vector<std::reference_wrapper<Reconstruction::Frame>> frameVectorRef(fragment.begin(),fragment.end());
+
+        Reconstruction::LocalRefiner::refineAndCreateMesh(frameVectorRef,config);
     }
-    return 0;
 }

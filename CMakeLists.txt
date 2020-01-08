@@ -50,6 +50,9 @@ target_link_libraries(registerSegment  ${PROJECT_NAME})
 add_executable(globalRefiner src/tests/test_global_refiner.cpp)
 target_link_libraries(globalRefiner   ${PROJECT_NAME})
 
+add_executable(localRefiner src/tests/test_local_refiner.cpp)
+target_link_libraries(localRefiner   ${PROJECT_NAME})
+
 add_executable(integrater src/tests/test_integrater.cpp)
 target_link_libraries(integrater   ${PROJECT_NAME})
 

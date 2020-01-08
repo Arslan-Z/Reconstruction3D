@@ -14,8 +14,12 @@ namespace Reconstruction
     class GeometryMethods
     {
     public:
-        static bool createRGBDImageFromFrame(const Frame frame, const Parser config, open3d::geometry::RGBDImage& rgbd);
-
+        static bool createRGBDImageFromFrame(const Frame frame, const Parser config, open3d::geometry::RGBDImage& rgbd, bool useIRImg = true);
+        static bool createMeshFromFrames(
+                const FrameVector frameVector,
+                const Parser config,
+                std::shared_ptr<open3d::geometry::TriangleMesh>& mesh,
+                bool color = false);
     };
 }
 
