@@ -30,13 +30,23 @@ open3d::geometry::TriangleMesh  LocalRefiner::refineAndCreateMesh(std::vector<st
 
     auto option = color_map::ColorMapOptimizationOption();
     option.maximum_iteration_ = 300;
-    option.non_rigid_camera_coordinate_ = true;
+    option.non_rigid_camera_coordinate_ = false;
 
     visualization::DrawGeometries({mesh});
     utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
     color_map::ColorMapOptimization(*mesh,rgbdVec,camera,option);
     visualization::DrawGeometries({mesh});
 
+    for(size_t frame_id = 0; frame_id < frameVectorRef.size(); frame_id++)
+    {
+        auto Tcw = camera.parameters_[frame_id].extrinsic_;
+        Eigen::Affine3d Tcw_affine;
+        Tcw_affine.matrix() = Tcw;
+        frameVectorRef[frame_id].get().setFromAffine3d(Tcw_affine);
+//        std::cout<<frameVectorRef[frame_id].get().getConstTcw()<<std::endl;
+//        std::cout<<frameVector[frame_id].getConstTcw()<<std::endl;
+    }
+    return *mesh;
 
 }
 

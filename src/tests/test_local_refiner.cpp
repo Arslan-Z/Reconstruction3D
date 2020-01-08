@@ -40,6 +40,6 @@ int main(int argc,char** argv)
     {
         std::vector<std::reference_wrapper<Reconstruction::Frame>> frameVectorRef(fragment.begin(),fragment.end());
 
-        Reconstruction::LocalRefiner::refineAndCreateMesh(frameVectorRef,config);
+//        Reconstruction::LocalRefiner::refineAndCreateMesh(frameVectorRef,config);
     }
 }

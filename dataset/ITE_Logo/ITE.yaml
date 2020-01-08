@@ -1,7 +1,7 @@
 %YAML:1.0
 
 debug_mode: true
-n_frame_per_fragment: 50
+n_frames_per_fragment: 50
 # TSDF
 TSDF.voxel_size: 0.05
 TSDF.size: 5.0
