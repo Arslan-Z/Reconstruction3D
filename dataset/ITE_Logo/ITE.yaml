@@ -8,7 +8,8 @@ TSDF.size: 5.0
 TSDF.resolution: 512.0
 TSDF.depth_factor: 1000.0
 TSDF.depth_truncate: 2.5
-
+#color map
+max_itr: 100
 #
 Integrater.volume_size: 6.0
 Integrater.resolution: 512.0
@@ -20,7 +21,7 @@ volume_size: 4.0
 resolution: 512.0
 sdf_trunc: 0.04
 depth_factor: 1000.0
-depth_truncate: 3.0
+depth_truncate: 2.5
 
 #local
 max_depth_diff: 0.07
@@ -28,6 +29,7 @@ preference_loop_closure_local: 0.1
 #registration ransac
 preference_loop_closure: 5.0
 global_registration: fph
+view_result: false
 # Camera calibration and distortion parameters (OpenCV) 
 Camera.fx: 431.828094
 Camera.fy: 431.828094
@@ -40,7 +42,7 @@ Camera.height: 480
 
 #
 n_keyFrames_per_fragment: 25
-intergrate_n_frame_per_fragment: 25
+intergrate_n_frame_per_fragment: 50
 
 
 

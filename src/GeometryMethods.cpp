@@ -49,6 +49,8 @@ bool GeometryMethods::createMeshFromFrames(
         bool color)
 {
     using namespace open3d;
+    if(frameVector.empty())
+        return false;
     double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
     double sdf_trunc = config.getValue<double>("sdf_trunc");
     integration::TSDFVolumeColorType type;
@@ -62,6 +64,8 @@ bool GeometryMethods::createMeshFromFrames(
     }
     integration::ScalableTSDFVolume volume(voxel_size,sdf_trunc,
                                            type);
+    auto Twc0 = frameVector[0].getConstTwc(); //set frame 0 as base
+
     for(auto frame : frameVector)
     {
         open3d::geometry::RGBDImage rgbd;
@@ -79,7 +83,8 @@ bool GeometryMethods::createMeshFromFrames(
         camera::PinholeCameraIntrinsic intrinsic;
 
         intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
-        auto extrinsic = frame.getConstTcw();
+        auto extrinsic = frame.getConstTcw() * Twc0;
+
         volume.Integrate(rgbd,intrinsic,extrinsic);
     }
     mesh = volume.ExtractTriangleMesh();
@@ -140,6 +145,9 @@ bool GeometryMethods::createPointCloundFromFrames(const FrameVector frameVector,
                                                   std::shared_ptr<open3d::geometry::PointCloud> &pcd, bool color)
 {
     using namespace open3d;
+    if(frameVector.empty())
+        return false;
+
     double voxel_size = config.getValue<double>("volume_size")/config.getValue<double>("resolution");
     double sdf_trunc = config.getValue<double>("sdf_trunc");
     integration::TSDFVolumeColorType type;
@@ -153,6 +161,7 @@ bool GeometryMethods::createPointCloundFromFrames(const FrameVector frameVector,
     }
     integration::ScalableTSDFVolume volume(voxel_size,sdf_trunc,
                                            type);
+    auto Twc0 = frameVector[0].getConstTwc(); //set frame 0 as base
     for(auto frame : frameVector)
     {
         open3d::geometry::RGBDImage rgbd;
@@ -170,7 +179,8 @@ bool GeometryMethods::createPointCloundFromFrames(const FrameVector frameVector,
         camera::PinholeCameraIntrinsic intrinsic;
 
         intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
-        auto extrinsic = frame.getConstTcw();
+        auto extrinsic = frame.getConstTcw() * Twc0;
+
         volume.Integrate(rgbd,intrinsic,extrinsic);
     }
     pcd = volume.ExtractPointCloud();

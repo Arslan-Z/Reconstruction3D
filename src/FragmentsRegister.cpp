@@ -147,6 +147,7 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
     using namespace open3d;
     registration::PoseGraph poseGraph_fragment;
     auto voxel_size = config.getValue<double>("voxel_size");
+    auto view = config.getValue<bool>("view_result");
     //odometry
     if(t == s + 1)
     {
@@ -156,7 +157,6 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
         auto Tcsncs0 = Twcsn.inverse()*Twcs0;
 
         Tctcs = Tcsncs0; //initial value
-        draw_registration_result(source_pcd_down,target_pcd_down,Tctcs);
 
         auto result = registration::RegistrationColoredICP(source_pcd_down,target_pcd_down,voxel_size,Tctcs,
                 registration::ICPConvergenceCriteria(1e-6,1e-6,500));
@@ -166,7 +166,8 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
                                                                         target_pcd_down,
                                                                         voxel_size*1.4,
                                                                         Tctcs);
-        draw_registration_result(source_pcd_down,target_pcd_down,Tctcs);
+        if(view)
+            draw_registration_result(source_pcd_down,target_pcd_down,Tctcs);
         return true;
     }
     else

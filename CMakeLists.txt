@@ -56,7 +56,8 @@ target_link_libraries(localRefiner   ${PROJECT_NAME})
 add_executable(integrater src/tests/test_integrater.cpp)
 target_link_libraries(integrater   ${PROJECT_NAME})
 
-
+add_executable(reconstruct src/Reconstruction.cpp)
+target_link_libraries(reconstruct  ${PROJECT_NAME})
 
 
 

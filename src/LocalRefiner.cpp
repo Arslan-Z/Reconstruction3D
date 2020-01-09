@@ -26,17 +26,20 @@ open3d::geometry::PointCloud LocalRefiner::refineAndCreateMPointCloud(std::vecto
         return geometry::PointCloud();
 
     std::shared_ptr<geometry::TriangleMesh> mesh;
-    std::shared_ptr<geometry::PointCloud> pcd;
+    std::shared_ptr<geometry::PointCloud> pcd(new geometry::PointCloud);
 
     GeometryMethods::createMeshFromFrames(frameVector,config,mesh,true);
+    mesh->ComputeVertexNormals();
 
+    auto max_itr = config.getValue<int>("max_itr");
     auto option = color_map::ColorMapOptimizationOption();
-    option.maximum_iteration_ = 300;
+    option.maximum_iteration_ = max_itr;
     option.non_rigid_camera_coordinate_ = false;
 
     bool debug = config.getValue<bool>("debug_mode");
-    if(debug)
+    if(debug) {
         utility::SetVerbosityLevel(utility::VerbosityLevel::Debug);
+    }
 
     color_map::ColorMapOptimization(*mesh,rgbdVec,camera,option);
 
@@ -46,9 +49,13 @@ open3d::geometry::PointCloud LocalRefiner::refineAndCreateMPointCloud(std::vecto
         Eigen::Affine3d Tcw_affine;
         Tcw_affine.matrix() = Tcw;
         frameVectorRef[frame_id].get().setFromAffine3d(Tcw_affine);
+//        frameVector[frame_id].setFromAffine3d(Tcw_affine);
     }
-
     GeometryMethods::createPointCloundFromFrames(frameVector,config,pcd,true);
+//    pcd->points_ = mesh->vertices_;
+//    pcd->colors_ = mesh->vertex_colors_;
+//    pcd->normals_ = mesh->vertex_normals_;
+//    visualization::DrawGeometries({pcd});
     return *pcd;
 }
 
