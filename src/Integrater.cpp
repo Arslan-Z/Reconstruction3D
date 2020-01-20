@@ -109,13 +109,14 @@ void Integrater::integrate(Parser config, std::string poseGraphName, size_t n_fr
     registration::PoseGraph global_poseGraph;
     io::ReadPoseGraph(poseGraphName,global_poseGraph);
 
-    for(size_t fragment_id = 0; fragment_id < global_poseGraph.nodes_.size()-1; fragment_id++)
+    for(size_t fragment_id = 0; fragment_id < global_poseGraph.nodes_.size(); fragment_id++) //global_poseGraph.nodes_.size()-1
     {
         auto Twc0 = global_poseGraph.nodes_[fragment_id].pose_;
-        Reconstruction::Integrater::integrateFragment(config,volume,fragment_id,frameVector,Twc0);
+        Reconstruction::Integrater::integrateFragment(config,volume,fragment_id,frameVector,Twc0);//todo
     }
 //    auto Tc0w = global_poseGraph.nodes_[11].pose_.inverse();
 //    Reconstruction::Integrater::integrateFragment(config,volume,11,frameVector,Tc0w);
+    open3d::io::WriteTriangleMesh(Parser::FianalPlyName(),*volume->ExtractTriangleMesh());
     open3d::visualization::DrawGeometries({volume->ExtractTriangleMesh()});
 }
 
@@ -164,9 +165,6 @@ void Integrater::integrateFragment(Parser config, Integrater::Volume volume, con
         auto frame = local_frameVec[node_id];
         auto Tc0cn = node.pose_;
         auto pose = Twc0 * Tc0cn;
-
-//        std::cout<<frame.mGlobalIndex<<std::endl;//todo
-//        printf("\r%d",(int) frame.mGlobalIndex);
         geometry::RGBDImage rgbd;
         GeometryMethods::createRGBDImageFromFrame(frame,config,rgbd,false);
 

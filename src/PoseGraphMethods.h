@@ -7,6 +7,7 @@
 
 #include "Open3D/Open3D.h"
 #include "util/Parser.h"
+#include "Frame.h"
 
 namespace Reconstruction
 {
@@ -30,6 +31,7 @@ namespace Reconstruction
             Eigen::Matrix6d information;
         };
         static std::vector<MatchingResult> createMatchesFromPoseGraph(const std::string poseGraphName);
+        static open3d::registration::PoseGraph createGlobalPoseGraphFromFrames(FrameVector frameVector, const std::string config_file);
         static void createPoseGraphFromMatches(std::vector<MatchingResult> matchingResults, const std::string poseGraphName);
 
         static void updatePoseGraph(
@@ -38,6 +40,7 @@ namespace Reconstruction
                 open3d::registration::PoseGraph& poseGraph);
         static void optimizePoseGraphForScene(const std::string config_file, const std::string source_poseGraphName, const std::string refined_poseGraphName);
         static void optimizePoseGraphForFragment(const std::string config_file, const std::string source_poseGraphName, const std::string refined_poseGraphName);
+
     };
 }
 

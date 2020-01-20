@@ -15,6 +15,6 @@ int main(int argc,char** argv)
 //                                                              "../dataset/ITE_Logo/");
 //    size_t n_frame_per_fragment = config.getValue<int>("n_frame_per_fragment");
 //    size_t n_fragments = std::ceil(frameVec.size()/n_frame_per_fragment) + 1;
-    GlobalRefiner::refine("../dataset/ITE_Logo/ITE.yaml",
+    GlobalRefiner::refine("../dataset/ITE_Long/ITE.yaml",
             "fragments/global_optimized.json");
 }

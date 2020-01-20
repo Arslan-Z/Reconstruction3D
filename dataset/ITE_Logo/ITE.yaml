@@ -11,9 +11,9 @@ TSDF.depth_truncate: 2.5
 #color map
 max_itr: 100
 #
-Integrater.volume_size: 6.0
-Integrater.resolution: 512.0
-Integrater.sdf_trunc: 0.06
+Integrater.volume_size: 7.0
+Integrater.resolution: 800.0
+Integrater.sdf_trunc: 0.15
 Integrater.color: true
 # volume
 voxel_size: 0.05

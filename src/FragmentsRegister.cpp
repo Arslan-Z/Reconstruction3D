@@ -159,9 +159,10 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
         Tctcs = Tcsncs0; //initial value
 
         auto result = registration::RegistrationColoredICP(source_pcd_down,target_pcd_down,voxel_size,Tctcs,
-                registration::ICPConvergenceCriteria(1e-6,1e-6,500));
+                registration::ICPConvergenceCriteria(1e-6,1e-6,50));
 
         Tctcs = result.transformation_;
+
         information = registration::GetInformationMatrixFromPointClouds(source_pcd_down,
                                                                         target_pcd_down,
                                                                         voxel_size*1.4,
@@ -172,6 +173,7 @@ bool FragmentsRegister::computeInitialRegistration(Parser config, size_t s, size
     }
     else
     {
+
         auto method = config.getValue<std::string>("global_registration");
         registration::RegistrationResult result;
         if(method == "ransac")
@@ -229,8 +231,8 @@ void FragmentsRegister::draw_registration_result(const open3d::geometry::PointCl
 
     *source_pcd = source;
     *target_pcd = target;
-    source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0.706, 0));
-    target_pcd->PaintUniformColor(Eigen::Vector3d(0, 0.651, 0.929));
+//    source_pcd->PaintUniformColor(Eigen::Vector3d(1, 0.706, 0));
+//    target_pcd->PaintUniformColor(Eigen::Vector3d(0, 0.651, 0.929));
     source_pcd->Transform(trans);
     source_pcd->EstimateNormals();
     target_pcd->EstimateNormals();

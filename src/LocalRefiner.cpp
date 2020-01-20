@@ -51,11 +51,14 @@ open3d::geometry::PointCloud LocalRefiner::refineAndCreateMPointCloud(std::vecto
         frameVectorRef[frame_id].get().setFromAffine3d(Tcw_affine);
 //        frameVector[frame_id].setFromAffine3d(Tcw_affine);
     }
-    GeometryMethods::createPointCloundFromFrames(frameVector,config,pcd,true);
-//    pcd->points_ = mesh->vertices_;
-//    pcd->colors_ = mesh->vertex_colors_;
-//    pcd->normals_ = mesh->vertex_normals_;
+//    GeometryMethods::createPointCloundFromFrames(frameVector,config,pcd,true);
+    pcd->points_ = mesh->vertices_;
+    pcd->colors_ = mesh->vertex_colors_;
+    pcd->normals_ = mesh->vertex_normals_;
+
+//    visualization::DrawGeometries({mesh});
 //    visualization::DrawGeometries({pcd});
+
     return *pcd;
 }
 
@@ -112,6 +115,9 @@ bool LocalRefiner::createCameraTrajectoryFromFrames(
     if(frameVector.empty())
         return false;
     camera.parameters_.clear();
+
+    auto Twc0 = frameVector[0].getConstTwc(); //set frame 0 as base
+
     for(auto frame : frameVector)
     {
         auto param = camera::PinholeCameraParameters();
@@ -126,7 +132,7 @@ bool LocalRefiner::createCameraTrajectoryFromFrames(
         Eigen::Matrix4d extrinsic;
 
         intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
-        extrinsic = frame.getConstTcw();
+        extrinsic = frame.getConstTcw() * Twc0;
 
         param.intrinsic_ = intrinsic;
         param.extrinsic_ = extrinsic;

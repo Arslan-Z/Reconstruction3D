@@ -17,7 +17,8 @@ public:
     static std::string globalPoseGraphOptName();
     static std::string globalPoseGraphOptRefinedName();
     static std::string poseGraphName(size_t fragment_id);
-    static  std::string plyFileName(size_t fragment_id);
+    static std::string plyFileName(size_t fragment_id);
+    static std::string FianalPlyName();
     template <typename  T>
     T getValue(std::string key);
 private:

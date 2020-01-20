@@ -10,9 +10,9 @@
 #include "../FragmentsRegister.h"
 int main(int argc,char** argv)
 {
-    auto frameVec = Reconstruction::io::Reader::readITEFrames("../dataset/ITE_Logo/cameras.txt",
-                                                              "../dataset/ITE_Logo/");
-    std::string config_file = "../dataset/ITE_Logo/ITE.yaml";
+    auto frameVec = Reconstruction::io::Reader::readITEFrames("../dataset/ITE_Long/cameras.txt",
+                                                              "../dataset/ITE_Long/");
+    std::string config_file = "../dataset/ITE_Long/ITE.yaml";
     Parser config;
     config.load(config_file);
     size_t n_frames_per_fragment = config.getValue<int>("n_frames_per_fragment");

@@ -6,6 +6,11 @@ IF(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
+find_package(OpenCV 3.0 QUIET)
+
+find_package(DBoW2 REQUIRED PATHS thrid_party/DBoW2/install/lib/cmake)
+include_directories(${DBoW2_INCLUDE_DIRS})
+
 find_package(Open3D REQUIRED PATHS thrid_party/Open3D/install/lib/cmake)
 list(APPEND Open3D_LIBRARIES dl)
 
@@ -39,7 +44,8 @@ add_library(${PROJECT_NAME} SHARED
         src/PoseGraphMethods.cpp
 	   )
 
-target_link_libraries(${PROJECT_NAME} ${Open3D_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${Open3D_LIBRARIES}
+                                      ${DBoW2_LIBRARIES})
 
 add_executable(makeSegment src/tests/test_make_fragments.cpp)
 target_link_libraries(makeSegment   ${PROJECT_NAME})
@@ -59,7 +65,8 @@ target_link_libraries(integrater   ${PROJECT_NAME})
 add_executable(reconstruct src/Reconstruction.cpp)
 target_link_libraries(reconstruct  ${PROJECT_NAME})
 
-
+add_executable(dbow src/tests/test_DBoW.cpp)
+target_link_libraries(dbow  ${PROJECT_NAME} ${OpenCV_LIBS})
 
 
 

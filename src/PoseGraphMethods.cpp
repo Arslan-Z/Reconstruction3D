@@ -9,8 +9,8 @@ using namespace Reconstruction;
 
 void PoseGraphMethods::updatePoseGraph(
         const MatchingResult matching_result,
-        Eigen::Matrix4d &Tcsw,
-        open3d::registration::PoseGraph &poseGraph)
+        Eigen::Matrix4d& Tcsw,
+        open3d::registration::PoseGraph& poseGraph)
 {
     using namespace open3d;
     auto s = matching_result.s;
@@ -20,9 +20,13 @@ void PoseGraphMethods::updatePoseGraph(
     //odometry
     if(t == s + 1 )
     {
-        auto Tctw = matching_result.Tctcs * Tcsw;
+        auto odom_inv = poseGraph.nodes_.back().pose_;
+        auto odom = Tctcs * odom_inv.inverse();
+        auto Tctw = Tctcs * Tcsw;
         Tcsw = Tctw; //update
-        registration::PoseGraphNode node(Tctw.inverse());
+//        registration::PoseGraphNode node(Tctw.inverse());
+        registration::PoseGraphNode node(odom.inverse());
+
         registration::PoseGraphEdge edge(s,t,Tctcs,information,false);
         poseGraph.nodes_.push_back(node);
         poseGraph.edges_.push_back(edge);
@@ -92,4 +96,57 @@ void PoseGraphMethods::optimizePoseGraphForScene(const std::string config_file,c
     registration::GlobalOptimization(poseGraph,method,criteria,option);
     io::WritePoseGraph(refined_poseGraphName,poseGraph);
     utility::SetVerbosityLevel(utility::VerbosityLevel::Error);
+}
+
+open3d::registration::PoseGraph PoseGraphMethods::createGlobalPoseGraphFromFrames(
+        FrameVector frameVector, const std::string config_file)
+{
+    if(frameVector.empty())
+        return open3d::registration::PoseGraph();
+    using namespace open3d;
+    Parser config;
+    config.load(config_file);
+    size_t n_frames_per_fragment = config.getValue<int>("n_frames_per_fragment");
+    size_t n_fragments = std::ceil(frameVector.size()/n_frames_per_fragment) + 1;
+
+    registration::PoseGraph poseGraph;
+    auto Tc0w = frameVector[0].getConstTcw();
+    poseGraph.nodes_.push_back(registration::PoseGraphNode(Eigen::Matrix4d::Identity()));
+    for(size_t fragment_id = 1; fragment_id < n_fragments; fragment_id++)
+    {
+        auto last_base_frame_id = (fragment_id - 1) * n_frames_per_fragment;
+        auto base_frame_id = fragment_id * n_frames_per_fragment;
+        if(base_frame_id < frameVector.size())
+        {
+            auto base_frame = frameVector[base_frame_id];
+            auto last_base_frame = frameVector[last_base_frame_id];
+            auto transform = base_frame.getConstTcw() * last_base_frame.getConstTwc();
+
+            registration::PoseGraphNode node(Tc0w * base_frame.getConstTwc());
+            registration::PoseGraphEdge edge(fragment_id-1,fragment_id,transform,Eigen::Matrix6d::Identity(),false);
+            poseGraph.nodes_.push_back(node);
+            poseGraph.edges_.push_back(edge);
+        }
+    }
+    for(size_t s = 0; s < poseGraph.nodes_.size(); s++)
+    {
+        for(size_t t = s + 1; t< poseGraph.nodes_.size(); t++)
+        {
+            if(t != s +1)
+            {
+                auto Tctw = poseGraph.nodes_[t].pose_.inverse();
+                auto Twcs = poseGraph.nodes_[s].pose_;
+                auto Tctcs = Tctw * Twcs;
+                auto trans = Tctcs.block<3,1>(0,3);
+                auto norm = trans[0]*trans[0] + trans[1] * trans[1];
+                norm = sqrt(norm);
+                if(norm<1.5)
+                {
+                    registration::PoseGraphEdge edge(s,t,Tctcs,Eigen::Matrix6d::Identity(),true);
+                    poseGraph.edges_.push_back(edge);
+                }
+            }
+        }
+    }
+    return poseGraph;
 }
